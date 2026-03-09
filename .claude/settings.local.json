@@ -3,7 +3,8 @@
     "allow": [
       "Bash(npm run build)",
       "Bash(npm install @anthropic-ai/sdk)",
-      "mcp__2846036f-98a7-4049-ac56-e56240ee2fbc__apply_migration"
+      "mcp__2846036f-98a7-4049-ac56-e56240ee2fbc__apply_migration",
+      "mcp__2846036f-98a7-4049-ac56-e56240ee2fbc__execute_sql"
     ]
   }
 }

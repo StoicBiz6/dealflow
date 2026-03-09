@@ -48,6 +48,13 @@ h1, h2, h3, h4, .display {
 }
 
 /* ── Responsive ── */
+@media (max-width: 900px) {
+  .deal-page-grid {
+    grid-template-columns: 1fr !important;
+    padding: 0 16px 40px !important;
+  }
+}
+
 @media (max-width: 640px) {
   /* Detail panel full-screen on mobile */
   .detail-panel {
