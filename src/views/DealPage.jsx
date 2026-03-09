@@ -64,6 +64,8 @@ export default function DealPage() {
   const [emailBody, setEmailBody] = useState('')
   const [emailLoading, setEmailLoading] = useState(false)
   const [emailCopied, setEmailCopied] = useState(false)
+  const [buyerUniverse, setBuyerUniverse] = useState([])  // PitchBook buyer universe
+  const [buyerLoading, setBuyerLoading] = useState(false)
 
   // Fetch deal
   useEffect(() => {
@@ -229,6 +231,20 @@ export default function DealPage() {
     if (!confirm('Delete this deal?')) return
     await supabase.from('deals').delete().eq('id', id)
     navigate('/')
+  }
+
+  const findBuyers = async () => {
+    setBuyerLoading(true)
+    try {
+      const res = await fetch('/api/find-buyers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deal: { ...deal, memo } }),
+      })
+      const data = await res.json()
+      if (data.buyers) setBuyerUniverse(data.buyers)
+    } catch { }
+    setBuyerLoading(false)
   }
 
   const generateEmail = async () => {
@@ -440,6 +456,81 @@ export default function DealPage() {
             ))}
             {documents.length === 0 && <div style={{ color: '#333', fontSize: '12px' }}>No documents uploaded</div>}
           </div>
+
+          {/* Buyer Universe */}
+          <div style={card}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <div>
+                <span style={sectionLabel}>Buyer Universe</span>
+                <div style={{ color: '#444', fontSize: '11px', marginTop: '-10px' }}>AI-generated · opens PitchBook profile</div>
+              </div>
+              <button
+                onClick={findBuyers}
+                disabled={buyerLoading}
+                style={{ background: 'rgba(124,106,247,0.1)', border: '1px solid #4a3fa0', color: '#9d8fff', borderRadius: '6px', padding: '6px 14px', cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
+              >
+                {buyerLoading ? 'Searching…' : buyerUniverse.length ? '↺ Refresh' : '✦ Find Buyers'}
+              </button>
+            </div>
+
+            {buyerLoading && (
+              <div style={{ color: '#555', fontSize: '12px', padding: '20px 0', textAlign: 'center' }}>
+                Analyzing deal profile and identifying buyers…
+              </div>
+            )}
+
+            {!buyerLoading && buyerUniverse.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {/* Type filter legend */}
+                <div style={{ display: 'flex', gap: '12px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                  {['PE', 'Strategic', 'Family Office', 'Growth Equity'].map(type => {
+                    const count = buyerUniverse.filter(b => b.type === type).length
+                    if (!count) return null
+                    const colors = { PE: '#6366f1', Strategic: '#f59e0b', 'Family Office': '#10b981', 'Growth Equity': '#3b82f6' }
+                    return (
+                      <span key={type} style={{ fontSize: '10px', color: colors[type] || '#888' }}>
+                        ● {type} ({count})
+                      </span>
+                    )
+                  })}
+                </div>
+
+                {buyerUniverse.map((buyer, i) => {
+                  const typeColors = { PE: { bg: 'rgba(99,102,241,0.1)', text: '#818cf8', border: 'rgba(99,102,241,0.3)' }, Strategic: { bg: 'rgba(245,158,11,0.1)', text: '#fbbf24', border: 'rgba(245,158,11,0.3)' }, 'Family Office': { bg: 'rgba(16,185,129,0.1)', text: '#34d399', border: 'rgba(16,185,129,0.3)' }, 'Growth Equity': { bg: 'rgba(59,130,246,0.1)', text: '#60a5fa', border: 'rgba(59,130,246,0.3)' } }
+                  const tc = typeColors[buyer.type] || { bg: 'rgba(255,255,255,0.05)', text: '#888', border: '#333' }
+                  const pbUrl = `https://app.pitchbook.com/search?q=${encodeURIComponent(buyer.pitchbook_query || buyer.name)}`
+
+                  return (
+                    <div key={i} style={{ background: '#141414', border: '1px solid #1f1f1f', borderRadius: '8px', padding: '12px 14px', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px', flexWrap: 'wrap' }}>
+                          <span style={{ fontFamily: 'Syne, sans-serif', fontSize: '13px', fontWeight: 600, color: '#f0f0f0' }}>{buyer.name}</span>
+                          <span style={{ background: tc.bg, color: tc.text, border: `1px solid ${tc.border}`, borderRadius: '4px', fontSize: '10px', padding: '1px 7px', flexShrink: 0 }}>{buyer.type}</span>
+                        </div>
+                        <div style={{ color: '#666', fontSize: '12px', lineHeight: 1.5 }}>{buyer.thesis}</div>
+                      </div>
+                      <a
+                        href={pbUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="View on PitchBook"
+                        style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '4px', background: '#1a1a2e', border: '1px solid #2a2a4a', borderRadius: '6px', padding: '5px 10px', textDecoration: 'none', color: '#9d8fff', fontSize: '11px', whiteSpace: 'nowrap', marginTop: '2px' }}
+                      >
+                        PitchBook ↗
+                      </a>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            {!buyerLoading && buyerUniverse.length === 0 && (
+              <div style={{ color: '#333', fontSize: '12px' }}>
+                Click "Find Buyers" to generate a targeted buyer universe based on this deal's profile — PE firms, strategic acquirers, and family offices with active mandates in this sector and size range.
+              </div>
+            )}
+          </div>
+
         </div>
 
         {/* ── RIGHT COLUMN ── */}
