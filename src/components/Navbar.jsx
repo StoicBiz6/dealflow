@@ -1,6 +1,6 @@
 import { UserButton } from '@clerk/clerk-react'
 
-export default function Navbar({ view, setView, onAddDeal }) {
+export default function Navbar({ view, setView, onAddDeal, onImport }) {
   return (
     <nav style={{
       height: '52px',
@@ -52,7 +52,23 @@ export default function Navbar({ view, setView, onAddDeal }) {
       </div>
 
       {/* Actions */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <button
+          onClick={onImport}
+          style={{
+            background: 'transparent',
+            border: '1px solid #2a2a2a',
+            borderRadius: '6px',
+            color: '#888',
+            cursor: 'pointer',
+            fontFamily: 'DM Mono, monospace',
+            fontSize: '12px',
+            padding: '5px 13px',
+            letterSpacing: '0.03em',
+          }}
+        >
+          ↑ Import
+        </button>
         <button
           onClick={onAddDeal}
           style={{

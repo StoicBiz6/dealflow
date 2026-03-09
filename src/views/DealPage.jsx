@@ -58,6 +58,12 @@ export default function DealPage() {
   const [newBuyer, setNewBuyer] = useState('')
   const [newCoInv, setNewCoInv] = useState({ name: '', firm: '', committed: '' })
   const [aiLoading, setAiLoading] = useState(false)
+  const [viewDoc, setViewDoc] = useState(null)            // PDF viewer
+  const [emailPanel, setEmailPanel] = useState(false)     // email composer
+  const [emailSubject, setEmailSubject] = useState('')
+  const [emailBody, setEmailBody] = useState('')
+  const [emailLoading, setEmailLoading] = useState(false)
+  const [emailCopied, setEmailCopied] = useState(false)
 
   // Fetch deal
   useEffect(() => {
@@ -223,6 +229,34 @@ export default function DealPage() {
     if (!confirm('Delete this deal?')) return
     await supabase.from('deals').delete().eq('id', id)
     navigate('/')
+  }
+
+  const generateEmail = async () => {
+    setEmailLoading(true)
+    setEmailPanel(true)
+    try {
+      const res = await fetch('/api/generate-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deal: { ...deal, memo } }),
+      })
+      const data = await res.json()
+      if (data.subject) setEmailSubject(data.subject)
+      if (data.body) setEmailBody(data.body)
+    } catch { }
+    setEmailLoading(false)
+  }
+
+  const openMailto = () => {
+    const emailList = contacts.filter(c => c.email).map(c => c.email).join(',')
+    const mailto = `mailto:${emailList}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`
+    window.open(mailto, '_blank')
+  }
+
+  const copyEmailBody = () => {
+    navigator.clipboard.writeText(`Subject: ${emailSubject}\n\n${emailBody}`)
+    setEmailCopied(true)
+    setTimeout(() => setEmailCopied(false), 2000)
   }
 
   const avgScore = () => {
@@ -395,9 +429,12 @@ export default function DealPage() {
             {documents.map(doc => (
               <div key={doc.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderBottom: '1px solid #1a1a1a' }}>
                 <span style={{ fontSize: '18px' }}>{doc.type?.includes('pdf') ? '📄' : doc.type?.includes('image') ? '🖼️' : '📎'}</span>
-                <a href={doc.url} target="_blank" rel="noopener noreferrer" style={{ flex: 1, color: '#9d8fff', fontSize: '12px', textDecoration: 'none' }}>{doc.name}</a>
-                <span style={{ color: '#444', fontSize: '11px' }}>{fmtSize(doc.size)}</span>
-                <span style={{ color: '#333', fontSize: '11px' }}>{formatDate(doc.uploaded_at)}</span>
+                <span style={{ flex: 1, color: '#9d8fff', fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</span>
+                {doc.type?.includes('pdf') && (
+                  <button onClick={() => setViewDoc(doc)} style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#aaa', borderRadius: '5px', fontSize: '11px', padding: '2px 8px', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>View</button>
+                )}
+                <a href={doc.url} target="_blank" rel="noopener noreferrer" style={{ color: '#444', fontSize: '11px', textDecoration: 'none', flexShrink: 0 }}>↗</a>
+                <span style={{ color: '#333', fontSize: '11px', flexShrink: 0 }}>{fmtSize(doc.size)}</span>
                 <button style={iconBtn} onClick={() => removeDocument(doc.id)} onMouseEnter={e => e.currentTarget.style.color = '#f87171'} onMouseLeave={e => e.currentTarget.style.color = '#333'}>×</button>
               </div>
             ))}
@@ -521,8 +558,95 @@ export default function DealPage() {
             <button style={addBtn} onClick={addContact}>+ Add Contact</button>
           </div>
 
+          {/* Email Buyers */}
+          <div style={card}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <span style={sectionLabel}>Email Outreach</span>
+              <button
+                onClick={generateEmail}
+                disabled={emailLoading}
+                style={{ background: 'rgba(124,106,247,0.1)', border: '1px solid #4a3fa0', color: '#9d8fff', borderRadius: '6px', padding: '5px 12px', cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit' }}
+              >
+                {emailLoading ? 'Generating…' : '✦ Generate Email'}
+              </button>
+            </div>
+
+            {emailPanel && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {contacts.filter(c => c.email).length > 0 && (
+                  <div style={{ fontSize: '11px', color: '#555', marginBottom: '4px' }}>
+                    To: {contacts.filter(c => c.email).map(c => c.email).join(', ')}
+                  </div>
+                )}
+                <div>
+                  <div style={{ color: '#555', fontSize: '10px', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Subject</div>
+                  <input
+                    style={inputStyle}
+                    value={emailSubject}
+                    onChange={e => setEmailSubject(e.target.value)}
+                    placeholder={emailLoading ? 'Generating subject…' : 'Email subject…'}
+                  />
+                </div>
+                <div>
+                  <div style={{ color: '#555', fontSize: '10px', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Body</div>
+                  <textarea
+                    style={{ ...inputStyle, minHeight: '180px', resize: 'vertical', lineHeight: 1.6 }}
+                    value={emailBody}
+                    onChange={e => setEmailBody(e.target.value)}
+                    placeholder={emailLoading ? 'Generating email…' : 'Email body…'}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={openMailto}
+                    style={{ background: '#7c6af7', border: 'none', color: '#fff', borderRadius: '6px', padding: '7px 14px', cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', fontWeight: 600 }}
+                  >
+                    Open in Email Client
+                  </button>
+                  <button
+                    onClick={copyEmailBody}
+                    style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', color: emailCopied ? '#4ade80' : '#aaa', borderRadius: '6px', padding: '7px 14px', cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit' }}
+                  >
+                    {emailCopied ? '✓ Copied' : 'Copy'}
+                  </button>
+                  <button
+                    onClick={() => setEmailPanel(false)}
+                    style={{ background: 'none', border: '1px solid #1f1f1f', color: '#444', borderRadius: '6px', padding: '7px 10px', cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit' }}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {!emailPanel && (
+              <div style={{ color: '#333', fontSize: '12px' }}>
+                Generate a professional deal summary email to send to contacts or buyers.
+              </div>
+            )}
+          </div>
+
         </div>
       </div>
+
+      {/* ── PDF Viewer Modal ── */}
+      {viewDoc && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 3000, display: 'flex', flexDirection: 'column' }}
+          onClick={e => { if (e.target === e.currentTarget) setViewDoc(null) }}
+        >
+          <div style={{ height: '52px', background: '#111', borderBottom: '1px solid #1f1f1f', display: 'flex', alignItems: 'center', padding: '0 20px', gap: '12px', flexShrink: 0 }}>
+            <span style={{ color: '#f0f0f0', fontSize: '13px', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>📄 {viewDoc.name}</span>
+            <a href={viewDoc.url} target="_blank" rel="noopener noreferrer" style={{ color: '#9d8fff', fontSize: '12px', textDecoration: 'none' }}>Open in new tab ↗</a>
+            <button onClick={() => setViewDoc(null)} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '20px', lineHeight: 1, padding: '0 4px' }}>✕</button>
+          </div>
+          <iframe
+            src={viewDoc.url}
+            title={viewDoc.name}
+            style={{ flex: 1, border: 'none', width: '100%' }}
+          />
+        </div>
+      )}
 
       {/* ── Edit modal ── */}
       {showEditModal && (

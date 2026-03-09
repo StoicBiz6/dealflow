@@ -3,6 +3,7 @@ import { Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 import { SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react'
 import Navbar from './components/Navbar'
 import DealModal from './components/DealModal'
+import ImportModal from './components/ImportModal'
 import KanbanView from './views/KanbanView'
 import DashboardView from './views/DashboardView'
 import ListView from './views/ListView'
@@ -13,6 +14,7 @@ import DealChat from './components/DealChat'
 function MainView() {
   const [view, setView] = useState('pipeline')
   const [modalDeal, setModalDeal] = useState(null)
+  const [showImport, setShowImport] = useState(false)
   const { deals, loading, error, addDeal, updateDeal, deleteDeal, updateStage, refetch } = useDeals()
   const navigate = useNavigate()
   const location = useLocation()
@@ -43,7 +45,7 @@ function MainView() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0a' }}>
-      <Navbar view={view} setView={setView} onAddDeal={openAdd} />
+      <Navbar view={view} setView={setView} onAddDeal={openAdd} onImport={() => setShowImport(true)} />
 
       {loading && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 'calc(100vh - 52px)', color: '#555', fontSize: '12px' }}>
@@ -68,6 +70,10 @@ function MainView() {
 
       {modalDeal !== null && (
         <DealModal deal={modalDeal} onSave={handleSave} onClose={closeModal} />
+      )}
+
+      {showImport && (
+        <ImportModal onClose={() => setShowImport(false)} addDeal={addDeal} />
       )}
     </div>
   )
