@@ -1,43 +1,30 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useSession, useUser } from '@clerk/clerk-react'
-import { getAuthClient } from '../lib/supabase'
+import { useUser } from '@clerk/clerk-react'
+import { supabase } from '../lib/supabase'
 
 export function useDeals() {
-  const { session } = useSession()
   const { user } = useUser()
   const [deals, setDeals] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // Returns a Supabase client authenticated with the current Clerk session
-  const getClient = useCallback(async () => {
-    const token = await session.getToken({ template: 'supabase' })
-    return getAuthClient(token)
-  }, [session])
-
   const fetchDeals = useCallback(async () => {
+    if (!user) return
     setLoading(true)
-    try {
-      const client = await getClient()
-      const { data, error } = await client
-        .from('deals')
-        .select('*')
-        .order('created_at', { ascending: false })
-      if (error) setError(error.message)
-      else setDeals(data || [])
-    } catch (e) {
-      setError(e.message)
-    }
+    const { data, error } = await supabase
+      .from('deals')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+    if (error) setError(error.message)
+    else setDeals(data || [])
     setLoading(false)
-  }, [getClient])
+  }, [user])
 
-  useEffect(() => {
-    if (session && user) fetchDeals()
-  }, [fetchDeals, session, user])
+  useEffect(() => { if (user) fetchDeals() }, [fetchDeals, user])
 
   const addDeal = async (deal) => {
-    const client = await getClient()
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from('deals')
       .insert([{ ...deal, user_id: user.id }])
       .select()
@@ -48,11 +35,11 @@ export function useDeals() {
   }
 
   const updateDeal = async (id, updates) => {
-    const client = await getClient()
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from('deals')
       .update(updates)
       .eq('id', id)
+      .eq('user_id', user.id)
       .select()
       .single()
     if (error) throw error
@@ -61,8 +48,11 @@ export function useDeals() {
   }
 
   const deleteDeal = async (id) => {
-    const client = await getClient()
-    const { error } = await client.from('deals').delete().eq('id', id)
+    const { error } = await supabase
+      .from('deals')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id)
     if (error) throw error
     setDeals(prev => prev.filter(d => d.id !== id))
   }
