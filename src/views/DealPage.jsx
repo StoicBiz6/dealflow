@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { UserButton } from '@clerk/clerk-react'
-import { supabase } from '../lib/supabase'
+import { UserButton, useSession } from '@clerk/clerk-react'
+import { getAuthClient } from '../lib/supabase'
 import { STAGES, STAGE_COLORS, SECTORS } from '../lib/constants'
 import { formatCurrency, formatDate } from '../lib/utils'
 import DealModal from '../components/DealModal'
@@ -35,6 +35,12 @@ const ACT_ICONS = { call: '📞', email: '✉️', meeting: '👥', note: '📝'
 export default function DealPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { session } = useSession()
+
+  const getClient = useCallback(async () => {
+    const token = await session.getToken({ template: 'supabase' })
+    return getAuthClient(token)
+  }, [session])
   const [deal, setDeal] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -62,7 +68,8 @@ export default function DealPage() {
   // Fetch deal
   useEffect(() => {
     async function load() {
-      const { data, error } = await supabase.from('deals').select('*').eq('id', id).single()
+      const client = await getClient()
+      const { data, error } = await client.from('deals').select('*').eq('id', id).single()
       if (error || !data) { navigate('/'); return }
       setDeal(data)
       setMemo(data.memo || '')
@@ -78,14 +85,15 @@ export default function DealPage() {
       setLoading(false)
     }
     load()
-  }, [id])
+  }, [id, getClient])
 
   const save = useCallback(async (updates) => {
     setSaving(true)
-    const { data } = await supabase.from('deals').update(updates).eq('id', id).select().single()
+    const client = await getClient()
+    const { data } = await client.from('deals').update(updates).eq('id', id).select().single()
     if (data) setDeal(data)
     setSaving(false)
-  }, [id])
+  }, [id, getClient])
 
   // Memo auto-save
   const handleMemoChange = (val) => {
@@ -214,14 +222,16 @@ export default function DealPage() {
 
   // Edit modal save
   const handleEditSave = async (data) => {
-    const { data: updated } = await supabase.from('deals').update(data).eq('id', id).select().single()
+    const client = await getClient()
+    const { data: updated } = await client.from('deals').update(data).eq('id', id).select().single()
     if (updated) setDeal(updated)
     setShowEditModal(false)
   }
 
   const handleDelete = async () => {
     if (!confirm('Delete this deal?')) return
-    await supabase.from('deals').delete().eq('id', id)
+    const client = await getClient()
+    await client.from('deals').delete().eq('id', id)
     navigate('/')
   }
 
