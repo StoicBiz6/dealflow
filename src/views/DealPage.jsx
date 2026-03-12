@@ -950,28 +950,6 @@ export default function DealPage() {
             </div>
           </div>
 
-          {/* Recommended Contacts */}
-          <div style={card}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <span style={sectionLabel}>Recommended Contacts</span>
-              <button onClick={generateContacts} disabled={aiLoading} style={{ background: 'rgba(124,106,247,0.1)', border: '1px solid #4a3fa0', color: '#9d8fff', borderRadius: '6px', padding: '5px 12px', cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit' }}>
-                {aiLoading ? 'Generating…' : '✦ AI Suggest'}
-              </button>
-            </div>
-            {contacts.map(c => (
-              <div key={c.id} style={{ background: '#141414', border: '1px solid #1f1f1f', borderRadius: '8px', padding: '10px', marginBottom: '8px', position: 'relative' }}>
-                <button style={{ ...iconBtn, position: 'absolute', top: 6, right: 6 }} onClick={() => removeContact(c.id)} onMouseEnter={e => e.currentTarget.style.color = '#f87171'} onMouseLeave={e => e.currentTarget.style.color = '#333'}>×</button>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '6px' }}>
-                  <input style={inputStyle} value={c.firm} onChange={e => updateContact(c.id, 'firm', e.target.value)} onBlur={saveContacts} placeholder="Firm" />
-                  <input style={inputStyle} value={c.name} onChange={e => updateContact(c.id, 'name', e.target.value)} onBlur={saveContacts} placeholder="Contact name" />
-                </div>
-                <input style={{ ...inputStyle, marginBottom: '6px' }} value={c.email} onChange={e => updateContact(c.id, 'email', e.target.value)} onBlur={saveContacts} placeholder="email@firm.com" />
-                <input style={inputStyle} value={c.notes} onChange={e => updateContact(c.id, 'notes', e.target.value)} onBlur={saveContacts} placeholder="Notes…" />
-              </div>
-            ))}
-            <button style={addBtn} onClick={addContact}>+ Add Contact</button>
-          </div>
-
           {/* Email Buyers */}
           <div style={card}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
