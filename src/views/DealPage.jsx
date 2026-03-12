@@ -85,6 +85,10 @@ function BuyerUniverseRow({ buyer, onUpdate, onAddToContacts, onAddToBuyers, isI
             <input style={inputStyle} value={buyer.email || ''} onChange={e => onUpdate({ ...buyer, email: e.target.value })} placeholder="firstname.lastname@firm.com" />
           </div>
           <div>
+            <div style={{ color: '#444', fontSize: '10px', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Website</div>
+            <input style={inputStyle} value={buyer.website || ''} onChange={e => onUpdate({ ...buyer, website: e.target.value })} placeholder="https://www.firm.com" />
+          </div>
+          <div>
             <div style={{ color: '#444', fontSize: '10px', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Phone</div>
             <input style={inputStyle} value={buyer.phone || ''} onChange={e => onUpdate({ ...buyer, phone: e.target.value })} placeholder="Phone" />
           </div>
