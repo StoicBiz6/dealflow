@@ -214,6 +214,8 @@ export default function DealPage() {
 
   // Fetch deal
   useEffect(() => {
+    setLoading(true)
+    setDeal(null)
     async function load() {
       const { data, error } = await supabase.from('deals').select('*').eq('id', id).single()
       if (error || !data) { navigate('/'); return }
