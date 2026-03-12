@@ -29,8 +29,8 @@ export default function Navbar({ view, setView, onAddDeal, onImport, activeWorks
       {/* View tabs */}
       <div style={{ display: 'flex', gap: '2px', flex: 1 }}>
         {[
-          { id: 'pipeline', label: 'Pipeline' },
           { id: 'dashboard', label: 'Dashboard' },
+          { id: 'pipeline', label: 'Pipeline' },
           { id: 'list', label: 'List' },
           { id: 'tasks', label: 'Tasks', badge: taskCount || null },
           { id: 'news', label: 'News' },
