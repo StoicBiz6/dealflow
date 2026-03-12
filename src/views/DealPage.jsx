@@ -66,11 +66,27 @@ function BuyerUniverseRow({ buyer, onUpdate, onAddToContacts, onAddToBuyers, isI
       {expanded && (
         <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #222', display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            <input style={inputStyle} value={buyer.email || ''} onChange={e => onUpdate({ ...buyer, email: e.target.value })} placeholder="email@firm.com" />
+            <div>
+              <div style={{ color: '#444', fontSize: '10px', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Contact Name</div>
+              <input style={inputStyle} value={buyer.contact_name || ''} onChange={e => onUpdate({ ...buyer, contact_name: e.target.value })} placeholder="e.g. Jane Smith" />
+            </div>
+            <div>
+              <div style={{ color: '#444', fontSize: '10px', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Title</div>
+              <input style={inputStyle} value={buyer.contact_title || ''} onChange={e => onUpdate({ ...buyer, contact_title: e.target.value })} placeholder="e.g. Managing Director" />
+            </div>
+          </div>
+          <div>
+            <div style={{ color: '#444', fontSize: '10px', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Email</div>
+            <input style={inputStyle} value={buyer.email || ''} onChange={e => onUpdate({ ...buyer, email: e.target.value })} placeholder="firstname.lastname@firm.com" />
+          </div>
+          <div>
+            <div style={{ color: '#444', fontSize: '10px', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Phone</div>
             <input style={inputStyle} value={buyer.phone || ''} onChange={e => onUpdate({ ...buyer, phone: e.target.value })} placeholder="Phone" />
           </div>
-          <input style={inputStyle} value={buyer.contact_name || ''} onChange={e => onUpdate({ ...buyer, contact_name: e.target.value })} placeholder="Contact name at firm" />
-          <input style={inputStyle} value={buyer.notes || ''} onChange={e => onUpdate({ ...buyer, notes: e.target.value })} placeholder="Notes…" />
+          <div>
+            <div style={{ color: '#444', fontSize: '10px', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Notes</div>
+            <input style={inputStyle} value={buyer.notes || ''} onChange={e => onUpdate({ ...buyer, notes: e.target.value })} placeholder="Notes…" />
+          </div>
           {(buyer.email || buyer.contact_name) && (
             <button
               onClick={() => onAddToContacts(buyer)}
@@ -415,7 +431,18 @@ export default function DealPage() {
       if (data.buyers) {
         // Merge new results with existing, preserving any contact info already added
         const existing = buyerUniverse.reduce((m, b) => { m[b.name] = b; return m }, {})
-        const merged = data.buyers.map(b => ({ ...b, ...(existing[b.name] ? { email: existing[b.name].email, phone: existing[b.name].phone, contact_name: existing[b.name].contact_name, notes: existing[b.name].notes } : {}) }))
+        const merged = data.buyers.map(b => {
+          const prev = existing[b.name]
+          // Preserve any manually edited fields; fall back to AI-generated values
+          return {
+            ...b,
+            contact_name: (prev?.contact_name ?? b.contact_name) || '',
+            contact_title: (prev?.contact_title ?? b.contact_title) || '',
+            email: (prev?.email ?? b.email) || '',
+            phone: prev?.phone || '',
+            notes: prev?.notes || '',
+          }
+        })
         setBuyerUniverse(merged)
         save({ buyer_universe: merged })
       }
@@ -446,7 +473,7 @@ export default function DealPage() {
     if (buyers.some(b => b.name === buyer.name)) return
     const newEntry = {
       id: crypto.randomUUID(),
-      name: buyer.name,
+      name: buyer.contact_name ? `${buyer.contact_name}${buyer.contact_title ? ` (${buyer.contact_title})` : ''}` : buyer.name,
       status: 'Active',
       email: buyer.email || '',
       phone: buyer.phone || '',
