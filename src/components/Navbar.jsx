@@ -1,6 +1,6 @@
 import { UserButton } from '@clerk/clerk-react'
 
-export default function Navbar({ view, setView, onAddDeal, onImport }) {
+export default function Navbar({ view, setView, onAddDeal, onImport, activeWorkspace: workspace, onWorkspace, taskCount }) {
   return (
     <nav style={{
       height: '52px',
@@ -28,15 +28,21 @@ export default function Navbar({ view, setView, onAddDeal, onImport }) {
 
       {/* View tabs */}
       <div style={{ display: 'flex', gap: '2px', flex: 1 }}>
-        {['pipeline', 'dashboard', 'list'].map(v => (
+        {[
+          { id: 'pipeline', label: 'Pipeline' },
+          { id: 'dashboard', label: 'Dashboard' },
+          { id: 'list', label: 'List' },
+          { id: 'tasks', label: 'Tasks', badge: taskCount || null },
+          { id: 'news', label: 'News' },
+        ].map(({ id, label, badge }) => (
           <button
-            key={v}
-            onClick={() => setView(v)}
+            key={id}
+            onClick={() => setView(id)}
             style={{
-              background: view === v ? '#1a1a1a' : 'transparent',
+              background: view === id ? '#1a1a1a' : 'transparent',
               border: 'none',
               borderRadius: '5px',
-              color: view === v ? '#f0f0f0' : '#555',
+              color: view === id ? '#f0f0f0' : '#555',
               cursor: 'pointer',
               fontFamily: 'DM Mono, monospace',
               fontSize: '12px',
@@ -44,15 +50,49 @@ export default function Navbar({ view, setView, onAddDeal, onImport }) {
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
               transition: 'all 0.15s',
+              display: 'flex', alignItems: 'center', gap: '5px',
             }}
           >
-            {v === 'pipeline' ? 'Pipeline' : v === 'dashboard' ? 'Dashboard' : 'List'}
+            {label}
+            {badge != null && badge > 0 && (
+              <span style={{
+                background: 'rgba(124,106,247,0.18)', color: '#9d8fff',
+                borderRadius: '10px', fontSize: '10px', padding: '0px 6px',
+                fontFamily: 'DM Mono, monospace', letterSpacing: 0,
+              }}>
+                {badge}
+              </span>
+            )}
           </button>
         ))}
       </div>
 
       {/* Actions */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+
+        {/* Workspace button */}
+        <button
+          onClick={onWorkspace}
+          title={workspace ? `Workspace: ${workspace.name}` : 'Set up team workspace'}
+          style={{
+            background: workspace ? 'rgba(124,106,247,0.12)' : 'transparent',
+            border: `1px solid ${workspace ? '#7c6af7' : '#2a2a2a'}`,
+            borderRadius: '6px',
+            color: workspace ? '#c4b5fd' : '#555',
+            cursor: 'pointer',
+            fontFamily: 'DM Mono, monospace',
+            fontSize: '12px',
+            padding: '5px 13px',
+            letterSpacing: '0.03em',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+          }}
+        >
+          <span>👥</span>
+          <span>{workspace ? workspace.name : 'Team'}</span>
+        </button>
+
         <button
           onClick={onImport}
           style={{

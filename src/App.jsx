@@ -4,24 +4,42 @@ import { SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react'
 import Navbar from './components/Navbar'
 import DealModal from './components/DealModal'
 import ImportModal from './components/ImportModal'
+import WorkspaceModal from './components/WorkspaceModal'
 import KanbanView from './views/KanbanView'
 import DashboardView from './views/DashboardView'
 import ListView from './views/ListView'
+import TasksView from './views/TasksView'
+import NewsView from './views/NewsView'
 import DealPage from './views/DealPage'
 import { useDeals } from './hooks/useDeals'
+import { useWorkspace } from './hooks/useWorkspace'
 import DealChat from './components/DealChat'
 
 function MainView() {
   const [view, setView] = useState('pipeline')
   const [modalDeal, setModalDeal] = useState(null)
   const [showImport, setShowImport] = useState(false)
-  const { deals, loading, error, addDeal, updateDeal, deleteDeal, updateStage, refetch } = useDeals()
+  const [showWorkspace, setShowWorkspace] = useState(false)
+
+  // Workspace — load first
+  const { workspaces, activeWorkspace, loading: wsLoading, userId, switchWorkspace, loadMembers, createWorkspace, joinWorkspace, leaveWorkspace } = useWorkspace()
+
+  // Deals — pass workspace id so queries scope correctly
+  const workspaceId = activeWorkspace?.id ?? null
+  const { deals, loading, error, addDeal, updateDeal, deleteDeal, updateStage, refetch } = useDeals(wsLoading ? undefined : workspaceId)
+
   const navigate = useNavigate()
   const location = useLocation()
 
   useEffect(() => {
     if (location.pathname === '/') refetch()
   }, [location.pathname])
+
+  // Pending task count for badge
+  const pendingTaskCount = deals.reduce((s, d) => s + (d.tasks || []).filter(t => !t.done).length, 0)
+
+  // Update tasks on a specific deal (used by TasksView)
+  const handleUpdateDealTasks = (dealId, tasks) => updateDeal(dealId, { tasks })
 
   const openAdd = () => setModalDeal({})
   const openDeal = (deal) => navigate(`/deal/${deal.id}`)
@@ -45,11 +63,19 @@ function MainView() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0a' }}>
-      <Navbar view={view} setView={setView} onAddDeal={openAdd} onImport={() => setShowImport(true)} />
+      <Navbar
+        view={view}
+        setView={setView}
+        onAddDeal={openAdd}
+        onImport={() => setShowImport(true)}
+        activeWorkspace={activeWorkspace}
+        onWorkspace={() => setShowWorkspace(true)}
+        taskCount={pendingTaskCount}
+      />
 
-      {loading && (
+      {(loading || wsLoading) && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 'calc(100vh - 52px)', color: '#555', fontSize: '12px' }}>
-          Loading deals...
+          Loading...
         </div>
       )}
       {error && (
@@ -58,11 +84,13 @@ function MainView() {
         </div>
       )}
 
-      {!loading && !error && (
+      {!loading && !wsLoading && !error && (
         <>
           {view === 'pipeline' && <KanbanView deals={deals} onEdit={openDeal} onDelete={handleDelete} onStageChange={updateStage} />}
           {view === 'dashboard' && <DashboardView deals={deals} onOpenDeal={openDeal} />}
           {view === 'list' && <ListView deals={deals} onEdit={openDeal} onDelete={handleDelete} />}
+          {view === 'tasks' && <TasksView deals={deals} onUpdateDealTasks={handleUpdateDealTasks} onOpenDeal={openDeal} />}
+          {view === 'news' && <NewsView deals={deals} />}
         </>
       )}
 
@@ -74,6 +102,20 @@ function MainView() {
 
       {showImport && (
         <ImportModal onClose={() => setShowImport(false)} addDeal={addDeal} />
+      )}
+
+      {showWorkspace && (
+        <WorkspaceModal
+          workspaces={workspaces}
+          activeWorkspace={activeWorkspace}
+          onClose={() => setShowWorkspace(false)}
+          onSwitch={switchWorkspace}
+          onLoadMembers={loadMembers}
+          onCreate={createWorkspace}
+          onJoin={joinWorkspace}
+          onLeave={leaveWorkspace}
+          currentUserId={userId}
+        />
       )}
     </div>
   )
