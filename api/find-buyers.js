@@ -53,7 +53,8 @@ Return ONLY valid JSON array:
     "pitchbook_query": "Firm Name as searchable on PitchBook",
     "contact_name": "First Last",
     "contact_title": "Managing Director",
-    "email": "firstname.lastname@firm.com"
+    "email": "firstname.lastname@firm.com",
+    "website": "https://www.firm.com"
   }
 ]
 

@@ -46,6 +46,11 @@ function BuyerUniverseRow({ buyer, onUpdate, onAddToContacts, onAddToBuyers, isI
           <a href={pbUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#1a1a2e', border: '1px solid #2a2a4a', borderRadius: '6px', padding: '5px 10px', textDecoration: 'none', color: '#9d8fff', fontSize: '11px', whiteSpace: 'nowrap' }}>
             PitchBook ↗
           </a>
+          {buyer.website && (
+            <a href={buyer.website.startsWith('http') ? buyer.website : `https://${buyer.website}`} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#141414', border: '1px solid #2a2a2a', borderRadius: '6px', padding: '5px 10px', textDecoration: 'none', color: '#888', fontSize: '11px', whiteSpace: 'nowrap' }}>
+              Website ↗
+            </a>
+          )}
           <button
             onClick={() => !isInBuyers && onAddToBuyers(buyer)}
             disabled={isInBuyers}
@@ -441,6 +446,7 @@ export default function DealPage() {
             email: (prev?.email ?? b.email) || '',
             phone: prev?.phone || '',
             notes: prev?.notes || '',
+            website: (prev?.website ?? b.website) || '',
           }
         })
         setBuyerUniverse(merged)
