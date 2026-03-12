@@ -213,6 +213,8 @@ export default function DealPage() {
   const [voiceListening, setVoiceListening] = useState(false)
   const [marketNews, setMarketNews] = useState(null)            // market intelligence data
   const [newsLoading, setNewsLoading] = useState(false)
+  const [newsCollapsed, setNewsCollapsed] = useState(false)
+  const [buyerUniverseCollapsed, setBuyerUniverseCollapsed] = useState(false)
 
   // Fetch deal
   useEffect(() => {
@@ -843,177 +845,201 @@ export default function DealPage() {
             {documents.length === 0 && <div style={{ color: '#333', fontSize: '12px' }}>No documents uploaded</div>}
           </div>
 
-          {/* Buyer Universe */}
+          {/* Market Intelligence */}
           <div style={card}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', gap: '10px' }}>
+            <div
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: newsCollapsed ? 0 : '14px' }}
+              onClick={() => setNewsCollapsed(x => !x)}
+            >
               <div>
-                <span style={sectionLabel}>Buyer Universe</span>
-                <div style={{ color: '#444', fontSize: '11px', marginTop: '-10px' }}>AI-generated · opens PitchBook profile</div>
+                <span style={sectionLabel}>Market Intelligence</span>
+                {!newsCollapsed && <div style={{ color: '#444', fontSize: '11px', marginTop: '-10px' }}>Comparable deals · Active investors · Sector trends</div>}
               </div>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
-                <select
-                  value={buyerTypeSelect}
-                  onChange={e => setBuyerTypeSelect(e.target.value)}
-                  style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '6px', color: buyerTypeSelect ? '#ccc' : '#555', fontSize: '12px', padding: '6px 10px', fontFamily: 'inherit', outline: 'none', cursor: 'pointer' }}
-                >
-                  <option value=''>All types</option>
-                  <option value='PE'>PE</option>
-                  <option value='Strategic'>Strategic</option>
-                  <option value='Family Office'>Family Office</option>
-                  <option value='Growth Equity'>Growth Equity</option>
-                </select>
-                <button
-                  onClick={findBuyers}
-                  disabled={buyerLoading}
-                  style={{ background: 'rgba(124,106,247,0.1)', border: '1px solid #4a3fa0', color: '#9d8fff', borderRadius: '6px', padding: '6px 14px', cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
-                >
-                  {buyerLoading ? 'Searching…' : buyerUniverse.length ? '↺ Refresh' : '✦ Find Buyers'}
-                </button>
+                {!newsCollapsed && (
+                  <button
+                    onClick={e => { e.stopPropagation(); loadMarketNews() }}
+                    disabled={newsLoading}
+                    style={{ background: 'rgba(124,106,247,0.1)', border: '1px solid #4a3fa0', color: '#9d8fff', borderRadius: '6px', padding: '6px 14px', cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
+                  >
+                    {newsLoading ? 'Loading…' : marketNews ? '↺ Refresh' : '✦ Load Intel'}
+                  </button>
+                )}
+                <span style={{ color: '#333', fontSize: '12px', userSelect: 'none' }}>{newsCollapsed ? '▸' : '▾'}</span>
               </div>
             </div>
 
-            {buyerLoading && (
-              <div style={{ color: '#555', fontSize: '12px', padding: '20px 0', textAlign: 'center' }}>
-                Analyzing deal profile and identifying buyers…
-              </div>
-            )}
+            {!newsCollapsed && (
+              <>
+                {newsLoading && (
+                  <div style={{ color: '#555', fontSize: '12px', padding: '20px 0', textAlign: 'center' }}>
+                    Scanning recent deals and investor activity…
+                  </div>
+                )}
 
-            {!buyerLoading && buyerUniverse.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <input
-                  value={buyerSearch}
-                  onChange={e => setBuyerSearch(e.target.value)}
-                  placeholder="Search buyers…"
-                  style={{ background: '#111', border: '1px solid #222', borderRadius: '6px', color: '#ccc', fontSize: '12px', padding: '6px 10px', fontFamily: 'inherit', outline: 'none', width: '100%', boxSizing: 'border-box' }}
-                />
+                {!newsLoading && !marketNews && (
+                  <div style={{ color: '#333', fontSize: '12px' }}>
+                    Load market intelligence to see comparable recent transactions, active investors in this space, and relevant sector trends.
+                  </div>
+                )}
 
-                {buyerUniverse
-                  .filter(b => !buyerTypeSelect || b.type === buyerTypeSelect)
-                  .filter(b => !buyerSearch || b.name?.toLowerCase().includes(buyerSearch.toLowerCase()) || b.thesis?.toLowerCase().includes(buyerSearch.toLowerCase()))
-                  .map((buyer, i) => (
-                    <BuyerUniverseRow
-                      key={i}
-                      buyer={buyer}
-                      onUpdate={updateBuyerUniverse}
-                      onAddToContacts={addBuyerUniverseToContacts}
-                      onAddToBuyers={addBuyerUniverseToBuyers}
-                      isInBuyers={buyers.some(b => b.name === buyer.name)}
-                    />
-                  ))}
-              </div>
-            )}
+                {!newsLoading && marketNews && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
-            {!buyerLoading && buyerUniverse.length === 0 && (
-              <div style={{ color: '#333', fontSize: '12px' }}>
-                Click "Find Buyers" to generate a targeted buyer universe based on this deal's profile — PE firms, strategic acquirers, and family offices with active mandates in this sector and size range.
-              </div>
+                    {/* Comparable Deals */}
+                    {marketNews.comparable_deals?.length > 0 && (
+                      <div>
+                        <div style={{ fontSize: '10px', color: '#555', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '10px' }}>Comparable Transactions</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {marketNews.comparable_deals.map((deal, i) => (
+                            <div key={i} style={{ background: '#141414', border: '1px solid #1f1f1f', borderRadius: '8px', padding: '12px 14px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px', gap: '8px' }}>
+                                <span style={{ fontFamily: 'Syne, sans-serif', fontSize: '13px', fontWeight: 600, color: '#e5e5e5', lineHeight: 1.3 }}>{deal.title}</span>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', flexShrink: 0 }}>
+                                  {deal.amount && <span style={{ background: 'rgba(124,106,247,0.1)', border: '1px solid rgba(124,106,247,0.25)', borderRadius: '4px', padding: '1px 7px', color: '#9d8fff', fontSize: '11px', whiteSpace: 'nowrap' }}>{deal.amount}</span>}
+                                  {deal.date && <span style={{ color: '#444', fontSize: '10px' }}>{deal.date}</span>}
+                                </div>
+                              </div>
+                              {deal.investors?.length > 0 && (
+                                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '6px' }}>
+                                  {deal.investors.map((inv, j) => (
+                                    <span key={j} style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '4px', padding: '1px 6px', color: '#666', fontSize: '10px' }}>{inv}</span>
+                                  ))}
+                                </div>
+                              )}
+                              {deal.relevance && <div style={{ color: '#555', fontSize: '11px', lineHeight: 1.5 }}>{deal.relevance}</div>}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Active Investors */}
+                    {marketNews.active_investors?.length > 0 && (
+                      <div>
+                        <div style={{ fontSize: '10px', color: '#555', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '10px' }}>Active Investors in This Space</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          {marketNews.active_investors.map((inv, i) => {
+                            const typeColors = { PE: '#818cf8', VC: '#60a5fa', 'Growth Equity': '#60a5fa', 'Family Office': '#34d399', Strategic: '#fbbf24' }
+                            return (
+                              <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', padding: '10px 12px', background: '#141414', border: '1px solid #1f1f1f', borderRadius: '8px' }}>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
+                                    <span style={{ fontFamily: 'Syne, sans-serif', fontSize: '12px', fontWeight: 600, color: '#e5e5e5' }}>{inv.name}</span>
+                                    {inv.type && <span style={{ color: typeColors[inv.type] || '#888', fontSize: '10px', flexShrink: 0 }}>{inv.type}</span>}
+                                  </div>
+                                  {inv.recent_activity && <div style={{ color: '#555', fontSize: '11px', lineHeight: 1.5 }}>{inv.recent_activity}</div>}
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Market Trends */}
+                    {marketNews.market_trends?.length > 0 && (
+                      <div>
+                        <div style={{ fontSize: '10px', color: '#555', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '10px' }}>Sector Trends</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          {marketNews.market_trends.map((t, i) => (
+                            <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', padding: '10px 12px', background: '#141414', border: '1px solid #1f1f1f', borderRadius: '8px' }}>
+                              <span style={{ color: '#7c6af7', fontSize: '14px', flexShrink: 0, marginTop: '1px' }}>↗</span>
+                              <div>
+                                <div style={{ color: '#ccc', fontSize: '12px', fontWeight: 500, marginBottom: '3px' }}>{t.trend}</div>
+                                {t.detail && <div style={{ color: '#555', fontSize: '11px', lineHeight: 1.5 }}>{t.detail}</div>}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div style={{ color: '#2a2a2a', fontSize: '10px', textAlign: 'right' }}>
+                      Based on AI market knowledge through early 2025
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
-          {/* Market Intelligence */}
+          {/* Buyer Universe */}
           <div style={card}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', gap: '10px' }}>
+            <div
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: buyerUniverseCollapsed ? 0 : '14px' }}
+              onClick={() => setBuyerUniverseCollapsed(x => !x)}
+            >
               <div>
-                <span style={sectionLabel}>Market Intelligence</span>
-                <div style={{ color: '#444', fontSize: '11px', marginTop: '-10px' }}>Comparable deals · Active investors · Sector trends</div>
+                <span style={sectionLabel}>Buyer Universe</span>
+                {!buyerUniverseCollapsed && <div style={{ color: '#444', fontSize: '11px', marginTop: '-10px' }}>AI-generated · opens PitchBook profile</div>}
               </div>
-              <button
-                onClick={loadMarketNews}
-                disabled={newsLoading}
-                style={{ background: 'rgba(124,106,247,0.1)', border: '1px solid #4a3fa0', color: '#9d8fff', borderRadius: '6px', padding: '6px 14px', cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0 }}
-              >
-                {newsLoading ? 'Loading…' : marketNews ? '↺ Refresh' : '✦ Load Intel'}
-              </button>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+                {!buyerUniverseCollapsed && (
+                  <>
+                    <select
+                      value={buyerTypeSelect}
+                      onChange={e => { e.stopPropagation(); setBuyerTypeSelect(e.target.value) }}
+                      onClick={e => e.stopPropagation()}
+                      style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '6px', color: buyerTypeSelect ? '#ccc' : '#555', fontSize: '12px', padding: '6px 10px', fontFamily: 'inherit', outline: 'none', cursor: 'pointer' }}
+                    >
+                      <option value=''>All types</option>
+                      <option value='PE'>PE</option>
+                      <option value='Strategic'>Strategic</option>
+                      <option value='Family Office'>Family Office</option>
+                      <option value='Growth Equity'>Growth Equity</option>
+                    </select>
+                    <button
+                      onClick={e => { e.stopPropagation(); findBuyers() }}
+                      disabled={buyerLoading}
+                      style={{ background: 'rgba(124,106,247,0.1)', border: '1px solid #4a3fa0', color: '#9d8fff', borderRadius: '6px', padding: '6px 14px', cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
+                    >
+                      {buyerLoading ? 'Searching…' : buyerUniverse.length ? '↺ Refresh' : '✦ Find Buyers'}
+                    </button>
+                  </>
+                )}
+                <span style={{ color: '#333', fontSize: '12px', userSelect: 'none' }}>{buyerUniverseCollapsed ? '▸' : '▾'}</span>
+              </div>
             </div>
 
-            {newsLoading && (
-              <div style={{ color: '#555', fontSize: '12px', padding: '20px 0', textAlign: 'center' }}>
-                Scanning recent deals and investor activity…
-              </div>
-            )}
+            {!buyerUniverseCollapsed && (
+              <>
+                {buyerLoading && (
+                  <div style={{ color: '#555', fontSize: '12px', padding: '20px 0', textAlign: 'center' }}>
+                    Analyzing deal profile and identifying buyers…
+                  </div>
+                )}
 
-            {!newsLoading && !marketNews && (
-              <div style={{ color: '#333', fontSize: '12px' }}>
-                Load market intelligence to see comparable recent transactions, active investors in this space, and relevant sector trends.
-              </div>
-            )}
-
-            {!newsLoading && marketNews && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-
-                {/* Comparable Deals */}
-                {marketNews.comparable_deals?.length > 0 && (
-                  <div>
-                    <div style={{ fontSize: '10px', color: '#555', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '10px' }}>Comparable Transactions</div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {marketNews.comparable_deals.map((deal, i) => (
-                        <div key={i} style={{ background: '#141414', border: '1px solid #1f1f1f', borderRadius: '8px', padding: '12px 14px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px', gap: '8px' }}>
-                            <span style={{ fontFamily: 'Syne, sans-serif', fontSize: '13px', fontWeight: 600, color: '#e5e5e5', lineHeight: 1.3 }}>{deal.title}</span>
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', flexShrink: 0 }}>
-                              {deal.amount && <span style={{ background: 'rgba(124,106,247,0.1)', border: '1px solid rgba(124,106,247,0.25)', borderRadius: '4px', padding: '1px 7px', color: '#9d8fff', fontSize: '11px', whiteSpace: 'nowrap' }}>{deal.amount}</span>}
-                              {deal.date && <span style={{ color: '#444', fontSize: '10px' }}>{deal.date}</span>}
-                            </div>
-                          </div>
-                          {deal.investors?.length > 0 && (
-                            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '6px' }}>
-                              {deal.investors.map((inv, j) => (
-                                <span key={j} style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '4px', padding: '1px 6px', color: '#666', fontSize: '10px' }}>{inv}</span>
-                              ))}
-                            </div>
-                          )}
-                          {deal.relevance && <div style={{ color: '#555', fontSize: '11px', lineHeight: 1.5 }}>{deal.relevance}</div>}
-                        </div>
+                {!buyerLoading && buyerUniverse.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <input
+                      value={buyerSearch}
+                      onChange={e => setBuyerSearch(e.target.value)}
+                      placeholder="Search buyers…"
+                      style={{ background: '#111', border: '1px solid #222', borderRadius: '6px', color: '#ccc', fontSize: '12px', padding: '6px 10px', fontFamily: 'inherit', outline: 'none', width: '100%', boxSizing: 'border-box' }}
+                    />
+                    {buyerUniverse
+                      .filter(b => !buyerTypeSelect || b.type === buyerTypeSelect)
+                      .filter(b => !buyerSearch || b.name?.toLowerCase().includes(buyerSearch.toLowerCase()) || b.thesis?.toLowerCase().includes(buyerSearch.toLowerCase()))
+                      .map((buyer, i) => (
+                        <BuyerUniverseRow
+                          key={i}
+                          buyer={buyer}
+                          onUpdate={updateBuyerUniverse}
+                          onAddToContacts={addBuyerUniverseToContacts}
+                          onAddToBuyers={addBuyerUniverseToBuyers}
+                          isInBuyers={buyers.some(b => b.name === buyer.name)}
+                        />
                       ))}
-                    </div>
                   </div>
                 )}
 
-                {/* Active Investors */}
-                {marketNews.active_investors?.length > 0 && (
-                  <div>
-                    <div style={{ fontSize: '10px', color: '#555', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '10px' }}>Active Investors in This Space</div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      {marketNews.active_investors.map((inv, i) => {
-                        const typeColors = { PE: '#818cf8', VC: '#60a5fa', 'Growth Equity': '#60a5fa', 'Family Office': '#34d399', Strategic: '#fbbf24' }
-                        return (
-                          <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', padding: '10px 12px', background: '#141414', border: '1px solid #1f1f1f', borderRadius: '8px' }}>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
-                                <span style={{ fontFamily: 'Syne, sans-serif', fontSize: '12px', fontWeight: 600, color: '#e5e5e5' }}>{inv.name}</span>
-                                {inv.type && <span style={{ color: typeColors[inv.type] || '#888', fontSize: '10px', flexShrink: 0 }}>{inv.type}</span>}
-                              </div>
-                              {inv.recent_activity && <div style={{ color: '#555', fontSize: '11px', lineHeight: 1.5 }}>{inv.recent_activity}</div>}
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
+                {!buyerLoading && buyerUniverse.length === 0 && (
+                  <div style={{ color: '#333', fontSize: '12px' }}>
+                    Click "Find Buyers" to generate a targeted buyer universe based on this deal's profile — PE firms, strategic acquirers, and family offices with active mandates in this sector and size range.
                   </div>
                 )}
-
-                {/* Market Trends */}
-                {marketNews.market_trends?.length > 0 && (
-                  <div>
-                    <div style={{ fontSize: '10px', color: '#555', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '10px' }}>Sector Trends</div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      {marketNews.market_trends.map((t, i) => (
-                        <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', padding: '10px 12px', background: '#141414', border: '1px solid #1f1f1f', borderRadius: '8px' }}>
-                          <span style={{ color: '#7c6af7', fontSize: '14px', flexShrink: 0, marginTop: '1px' }}>↗</span>
-                          <div>
-                            <div style={{ color: '#ccc', fontSize: '12px', fontWeight: 500, marginBottom: '3px' }}>{t.trend}</div>
-                            {t.detail && <div style={{ color: '#555', fontSize: '11px', lineHeight: 1.5 }}>{t.detail}</div>}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div style={{ color: '#2a2a2a', fontSize: '10px', textAlign: 'right' }}>
-                  Based on AI market knowledge through early 2025
-                </div>
-              </div>
+              </>
             )}
           </div>
 
