@@ -15,6 +15,119 @@ const iconBtn = { background: 'none', border: 'none', color: '#333', cursor: 'po
 const metaKey = { color: '#555', fontSize: '12px' }
 const metaVal = { color: '#ccc', fontSize: '12px', fontWeight: 500 }
 
+// ─── Buyer Universe Row (expandable contact card) ────────────────────────────
+function BuyerUniverseRow({ buyer, onUpdate, onAddToContacts, onAddToBuyers, isInBuyers }) {
+  const [expanded, setExpanded] = useState(false)
+  const hasContact = buyer.email || buyer.phone || buyer.notes
+  const typeColors = { PE: { bg: 'rgba(99,102,241,0.1)', text: '#818cf8', border: 'rgba(99,102,241,0.3)' }, Strategic: { bg: 'rgba(245,158,11,0.1)', text: '#fbbf24', border: 'rgba(245,158,11,0.3)' }, 'Family Office': { bg: 'rgba(16,185,129,0.1)', text: '#34d399', border: 'rgba(16,185,129,0.3)' }, 'Growth Equity': { bg: 'rgba(59,130,246,0.1)', text: '#60a5fa', border: 'rgba(59,130,246,0.3)' } }
+  const tc = typeColors[buyer.type] || { bg: 'rgba(255,255,255,0.05)', text: '#888', border: '#333' }
+  const pbUrl = `https://app.pitchbook.com/search?q=${encodeURIComponent(buyer.pitchbook_query || buyer.name)}`
+
+  return (
+    <div style={{ background: '#141414', border: `1px solid ${expanded ? '#2a2a3a' : '#1f1f1f'}`, borderRadius: '8px', padding: '12px 14px', marginBottom: '8px', transition: 'border-color 0.15s' }}>
+      <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px', flexWrap: 'wrap' }}>
+            <span
+              style={{ fontFamily: 'Syne, sans-serif', fontSize: '13px', fontWeight: 600, color: '#f0f0f0', cursor: 'default', userSelect: 'none' }}
+              onDoubleClick={() => setExpanded(x => !x)}
+              title="Double-click to add contact info"
+            >
+              {buyer.name}
+            </span>
+            <span style={{ background: tc.bg, color: tc.text, border: `1px solid ${tc.border}`, borderRadius: '4px', fontSize: '10px', padding: '1px 7px', flexShrink: 0 }}>{buyer.type}</span>
+            {hasContact && !expanded && (
+              <span style={{ color: '#7c6af7', fontSize: '11px', cursor: 'pointer' }} onClick={() => setExpanded(true)} title="Has contact info">✉</span>
+            )}
+          </div>
+          <div style={{ color: '#666', fontSize: '12px', lineHeight: 1.5 }}>{buyer.thesis}</div>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end', flexShrink: 0 }}>
+          <a href={pbUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#1a1a2e', border: '1px solid #2a2a4a', borderRadius: '6px', padding: '5px 10px', textDecoration: 'none', color: '#9d8fff', fontSize: '11px', whiteSpace: 'nowrap' }}>
+            PitchBook ↗
+          </a>
+          <button
+            onClick={() => !isInBuyers && onAddToBuyers(buyer)}
+            disabled={isInBuyers}
+            style={{ background: isInBuyers ? 'rgba(74,222,128,0.06)' : 'rgba(74,222,128,0.1)', border: `1px solid ${isInBuyers ? '#166534' : '#166534'}`, color: isInBuyers ? '#4ade80' : '#4ade80', borderRadius: '6px', padding: '5px 10px', cursor: isInBuyers ? 'default' : 'pointer', fontSize: '11px', fontFamily: 'inherit', whiteSpace: 'nowrap', opacity: isInBuyers ? 0.5 : 1 }}
+            title={isInBuyers ? 'Already in Buyers list' : 'Add to tracked Buyers'}
+          >
+            {isInBuyers ? '✓ In Buyers' : '+ Buyers'}
+          </button>
+          <button
+            onClick={() => setExpanded(x => !x)}
+            style={{ background: 'none', border: 'none', color: expanded ? '#7c6af7' : '#333', cursor: 'pointer', fontSize: '11px', padding: '2px 4px', fontFamily: 'inherit' }}
+          >
+            {expanded ? '▾ contacts' : '▸ contacts'}
+          </button>
+        </div>
+      </div>
+
+      {expanded && (
+        <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #222', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            <input style={inputStyle} value={buyer.email || ''} onChange={e => onUpdate({ ...buyer, email: e.target.value })} placeholder="email@firm.com" />
+            <input style={inputStyle} value={buyer.phone || ''} onChange={e => onUpdate({ ...buyer, phone: e.target.value })} placeholder="Phone" />
+          </div>
+          <input style={inputStyle} value={buyer.contact_name || ''} onChange={e => onUpdate({ ...buyer, contact_name: e.target.value })} placeholder="Contact name at firm" />
+          <input style={inputStyle} value={buyer.notes || ''} onChange={e => onUpdate({ ...buyer, notes: e.target.value })} placeholder="Notes…" />
+          {(buyer.email || buyer.contact_name) && (
+            <button
+              onClick={() => onAddToContacts(buyer)}
+              style={{ background: 'rgba(124,106,247,0.1)', border: '1px solid #4a3fa0', color: '#9d8fff', borderRadius: '6px', padding: '6px 12px', cursor: 'pointer', fontSize: '11px', fontFamily: 'inherit', alignSelf: 'flex-start' }}
+            >
+              → Add to Contacts
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Buyer Row (expandable contact card) ─────────────────────────────────────
+function BuyerRow({ buyer, onToggle, onRemove, onUpdate }) {
+  const [expanded, setExpanded] = useState(false)
+  const hasContact = buyer.email || buyer.phone || buyer.firm
+  return (
+    <div style={{ marginBottom: '6px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <span
+          style={{ flex: 1, color: '#ccc', fontSize: '12px', cursor: 'default', userSelect: 'none' }}
+          onDoubleClick={() => setExpanded(x => !x)}
+          title="Double-click to view/edit contact info"
+        >
+          {buyer.name || <span style={{ color: '#444' }}>Unnamed</span>}
+        </span>
+        {hasContact && !expanded && (
+          <span style={{ color: '#7c6af7', fontSize: '12px', cursor: 'pointer', flexShrink: 0 }} onClick={() => setExpanded(true)} title="Has contact info">✉</span>
+        )}
+        <button onClick={onToggle} style={{ background: buyer.status === 'Active' ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)', color: buyer.status === 'Active' ? '#4ade80' : '#f87171', border: `1px solid ${buyer.status === 'Active' ? '#166534' : '#991b1b'}`, borderRadius: '4px', fontSize: '10px', padding: '2px 8px', cursor: 'pointer', fontFamily: 'inherit' }}>
+          {buyer.status}
+        </button>
+        <button
+          style={{ ...iconBtn, color: expanded ? '#7c6af7' : '#333', fontSize: '10px' }}
+          onClick={() => setExpanded(x => !x)}
+          title="Toggle contact info"
+        >
+          {expanded ? '▾' : '▸'}
+        </button>
+        <button style={iconBtn} onClick={onRemove} onMouseEnter={e => e.currentTarget.style.color = '#f87171'} onMouseLeave={e => e.currentTarget.style.color = '#333'}>×</button>
+      </div>
+      {expanded && (
+        <div style={{ background: '#141414', border: '1px solid #1f1f1f', borderRadius: '8px', padding: '12px', marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            <input style={inputStyle} value={buyer.email || ''} onChange={e => onUpdate({ ...buyer, email: e.target.value })} placeholder="email@firm.com" />
+            <input style={inputStyle} value={buyer.phone || ''} onChange={e => onUpdate({ ...buyer, phone: e.target.value })} placeholder="Phone" />
+          </div>
+          <input style={inputStyle} value={buyer.firm || ''} onChange={e => onUpdate({ ...buyer, firm: e.target.value })} placeholder="Firm / Organization" />
+          <input style={inputStyle} value={buyer.notes || ''} onChange={e => onUpdate({ ...buyer, notes: e.target.value })} placeholder="Notes…" />
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Star Rating ─────────────────────────────────────────────────────────────
 function Stars({ value = 0, onChange }) {
   return (
@@ -64,8 +177,15 @@ export default function DealPage() {
   const [emailBody, setEmailBody] = useState('')
   const [emailLoading, setEmailLoading] = useState(false)
   const [emailCopied, setEmailCopied] = useState(false)
-  const [buyerUniverse, setBuyerUniverse] = useState([])  // PitchBook buyer universe
+  const [buyerUniverse, setBuyerUniverse] = useState([])  // saved buyer universe (persisted)
   const [buyerLoading, setBuyerLoading] = useState(false)
+  const [buyerTypeFilter, setBuyerTypeFilter] = useState(null)  // null = all
+  const [buyerSearch, setBuyerSearch] = useState('')
+  const [buyerTypeSelect, setBuyerTypeSelect] = useState('')    // pre-generation: '' = all
+  const [cimParsing, setCimParsing] = useState(false)
+  const [cimPreview, setCimPreview] = useState(null)            // parsed fields awaiting apply
+  const [cimPreviewSource, setCimPreviewSource] = useState('cim') // 'cim' | 'voice'
+  const [voiceListening, setVoiceListening] = useState(false)
 
   // Fetch deal
   useEffect(() => {
@@ -83,6 +203,7 @@ export default function DealPage() {
       setCoInvestors(data.co_investors || [])
       setDocuments(data.documents || [])
       setTimeline(data.timeline_to_close || '')
+      setBuyerUniverse(data.buyer_universe || [])
       setLoading(false)
     }
     load()
@@ -156,6 +277,10 @@ export default function DealPage() {
     const next = buyers.filter(b => b.id !== bid)
     setBuyers(next); save({ buyers: next })
   }
+  const updateBuyer = (updated) => {
+    const next = buyers.map(b => b.id === updated.id ? updated : b)
+    setBuyers(next); save({ buyers: next })
+  }
 
   // Co-investors
   const addCoInvestor = () => {
@@ -214,6 +339,51 @@ export default function DealPage() {
     const next = [...documents, newDoc]
     setDocuments(next); save({ documents: next })
     e.target.value = ''
+
+    // Auto-parse PDFs and offer to update deal fields
+    if (file.type === 'application/pdf') {
+      setCimPreviewSource('cim')
+      setCimParsing(true)
+      try {
+        const res = await fetch('/api/parse-cim', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: publicUrl }),
+        })
+        const parsed = await res.json()
+        if (parsed.error) {
+          alert('CIM parsing failed: ' + parsed.error)
+        } else {
+          setCimPreview(parsed)
+        }
+      } catch (err) {
+        alert('CIM parsing error: ' + err.message)
+      }
+      setCimParsing(false)
+    }
+  }
+
+  const applyCimPreview = async () => {
+    if (!cimPreview) return
+    const updates = {}
+    const fields = ['company_name', 'sector', 'raise_amount', 'valuation', 'fee_pct', 'stage', 'website', 'deal_owner', 'notes', 'timeline_to_close']
+    fields.forEach(f => { if (cimPreview[f] != null && cimPreview[f] !== '') updates[f] = cimPreview[f] })
+    if (cimPreview.memo) { updates.memo = cimPreview.memo; setMemo(cimPreview.memo) }
+    if (cimPreview.metrics && Object.keys(cimPreview.metrics).length) { updates.metrics = cimPreview.metrics; setMetrics(cimPreview.metrics) }
+    if (cimPreview.contacts?.length) { updates.contacts = cimPreview.contacts; setContacts(cimPreview.contacts) }
+    if (cimPreview.co_investors?.length) { updates.co_investors = cimPreview.co_investors; setCoInvestors(cimPreview.co_investors) }
+    if (Object.keys(updates).length === 0) {
+      alert('No extractable fields found in this document. It may not be a CIM or the document is not machine-readable.')
+      setCimPreview(null)
+      return
+    }
+    const { error } = await supabase.from('deals').update(updates).eq('id', id)
+    if (error) {
+      alert('Save failed: ' + error.message)
+      return
+    }
+    setDeal(prev => ({ ...prev, ...updates }))
+    setCimPreview(null)
   }
   const removeDocument = (did) => {
     const next = documents.filter(d => d.id !== did)
@@ -239,12 +409,110 @@ export default function DealPage() {
       const res = await fetch('/api/find-buyers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ deal: { ...deal, memo } }),
+        body: JSON.stringify({ deal: { ...deal, memo }, types: buyerTypeSelect ? [buyerTypeSelect] : undefined }),
       })
       const data = await res.json()
-      if (data.buyers) setBuyerUniverse(data.buyers)
+      if (data.buyers) {
+        // Merge new results with existing, preserving any contact info already added
+        const existing = buyerUniverse.reduce((m, b) => { m[b.name] = b; return m }, {})
+        const merged = data.buyers.map(b => ({ ...b, ...(existing[b.name] ? { email: existing[b.name].email, phone: existing[b.name].phone, contact_name: existing[b.name].contact_name, notes: existing[b.name].notes } : {}) }))
+        setBuyerUniverse(merged)
+        save({ buyer_universe: merged })
+      }
     } catch { }
     setBuyerLoading(false)
+  }
+
+  const updateBuyerUniverse = (updated) => {
+    const next = buyerUniverse.map(b => b.name === updated.name ? updated : b)
+    setBuyerUniverse(next)
+    save({ buyer_universe: next })
+  }
+
+  const addBuyerUniverseToContacts = (buyer) => {
+    const newContact = {
+      id: crypto.randomUUID(),
+      name: buyer.contact_name || '',
+      firm: buyer.name,
+      email: buyer.email || '',
+      notes: buyer.notes || '',
+    }
+    const next = [...contacts, newContact]
+    setContacts(next)
+    save({ contacts: next })
+  }
+
+  const addBuyerUniverseToBuyers = (buyer) => {
+    if (buyers.some(b => b.name === buyer.name)) return
+    const newEntry = {
+      id: crypto.randomUUID(),
+      name: buyer.name,
+      status: 'Active',
+      email: buyer.email || '',
+      phone: buyer.phone || '',
+      firm: buyer.name,
+      notes: buyer.notes || '',
+    }
+    const next = [...buyers, newEntry]
+    setBuyers(next)
+    save({ buyers: next })
+  }
+
+  const startVoice = async () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      alert('Voice recognition is not supported in this browser. Please use Chrome or Edge.')
+      return
+    }
+
+    // Request mic permission first — prevents the "network" error in Chrome
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      stream.getTracks().forEach(t => t.stop()) // release mic, we just needed the grant
+    } catch {
+      alert('Microphone access denied. Please click the lock icon in your address bar and allow microphone access, then try again.')
+      return
+    }
+
+    const recognition = new SpeechRecognition()
+    recognition.lang = 'en-US'
+    recognition.interimResults = false
+    recognition.maxAlternatives = 1
+
+    setVoiceListening(true)
+    setCimPreview(null)
+
+    recognition.onresult = async (event) => {
+      const transcript = event.results[0][0].transcript
+      setVoiceListening(false)
+      setCimPreviewSource('voice')
+      setCimParsing(true)
+      try {
+        const res = await fetch('/api/voice-update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ transcript }),
+        })
+        const parsed = await res.json()
+        if (parsed.error) {
+          alert('Voice parsing failed: ' + parsed.error)
+        } else {
+          setCimPreview(parsed)
+        }
+      } catch (err) {
+        alert('Voice error: ' + err.message)
+      }
+      setCimParsing(false)
+    }
+
+    recognition.onerror = (event) => {
+      setVoiceListening(false)
+      if (event.error !== 'no-speech') alert('Voice error: ' + event.error)
+    }
+
+    recognition.onend = () => setVoiceListening(false)
+
+    recognition.start()
   }
 
   const generateEmail = async () => {
@@ -303,9 +571,47 @@ export default function DealPage() {
         </span>
         {saving && <span style={{ color: '#444', fontSize: '11px' }}>Saving…</span>}
         <button onClick={() => setShowEditModal(true)} style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#aaa', borderRadius: '6px', padding: '5px 14px', cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit' }}>Edit</button>
+        <button
+          onClick={startVoice}
+          disabled={voiceListening || cimParsing}
+          title="Speak to update deal fields"
+          style={{ background: voiceListening ? 'rgba(239,68,68,0.12)' : 'rgba(124,106,247,0.1)', border: `1px solid ${voiceListening ? '#991b1b' : '#4a3fa0'}`, color: voiceListening ? '#f87171' : '#9d8fff', borderRadius: '6px', padding: '5px 14px', cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: '5px', transition: 'all 0.2s' }}
+        >
+          {voiceListening ? <>● <span>Listening…</span></> : <>🎤 <span>Voice</span></>}
+        </button>
         <button onClick={handleDelete} style={{ background: 'none', border: '1px solid #2a2a2a', color: '#f87171', borderRadius: '6px', padding: '5px 14px', cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit' }}>Delete</button>
         <UserButton afterSignOutUrl="/" />
       </nav>
+
+      {/* ── CIM / voice parse banner ── */}
+      {(voiceListening || cimParsing) && (
+        <div style={{ background: 'rgba(124,106,247,0.08)', borderBottom: '1px solid rgba(124,106,247,0.2)', padding: '10px 32px', color: '#9d8fff', fontSize: '12px', textAlign: 'center' }}>
+          {voiceListening ? '🎤 Listening — speak your update…' : cimPreviewSource === 'voice' ? 'Processing voice command…' : 'Parsing PDF and extracting deal fields…'}
+        </div>
+      )}
+      {cimPreview && !cimParsing && !voiceListening && (
+        <div style={{ background: '#0f0f1a', borderBottom: '1px solid rgba(124,106,247,0.25)', padding: '14px 32px', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+          <span style={{ color: '#9d8fff', fontSize: '12px', fontWeight: 600 }}>{cimPreviewSource === 'voice' ? '🎤 Voice update' : '✦ CIM parsed'}</span>
+          <div style={{ flex: 1, display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            {[
+              cimPreview.company_name && `Company: ${cimPreview.company_name}`,
+              cimPreview.sector && `Sector: ${cimPreview.sector}`,
+              cimPreview.raise_amount && `Raise: $${(cimPreview.raise_amount/1e6).toFixed(1)}M`,
+              cimPreview.valuation && `Val: $${(cimPreview.valuation/1e6).toFixed(1)}M`,
+              cimPreview.stage && `Stage: ${cimPreview.stage}`,
+              cimPreview.website && `Web: ${cimPreview.website}`,
+              cimPreview.metrics && Object.keys(cimPreview.metrics).length && `${Object.keys(cimPreview.metrics).length} metrics`,
+              cimPreview.contacts?.length && `${cimPreview.contacts.length} contacts`,
+            ].filter(Boolean).map((label, i) => (
+              <span key={i} style={{ background: 'rgba(124,106,247,0.1)', border: '1px solid rgba(124,106,247,0.2)', borderRadius: '4px', padding: '2px 8px', color: '#aaa', fontSize: '11px' }}>{label}</span>
+            ))}
+          </div>
+          <button onClick={applyCimPreview} style={{ background: 'rgba(124,106,247,0.15)', border: '1px solid #4a3fa0', color: '#9d8fff', borderRadius: '6px', padding: '6px 16px', cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+            Apply to deal
+          </button>
+          <button onClick={() => setCimPreview(null)} style={{ background: 'none', border: 'none', color: '#444', cursor: 'pointer', fontSize: '18px', padding: '0 4px', lineHeight: 1 }}>×</button>
+        </div>
+      )}
 
       {/* ── Page header ── */}
       <div style={{ padding: '28px 32px 0', maxWidth: '1300px', margin: '0 auto' }}>
@@ -447,7 +753,29 @@ export default function DealPage() {
                 <span style={{ fontSize: '18px' }}>{doc.type?.includes('pdf') ? '📄' : doc.type?.includes('image') ? '🖼️' : '📎'}</span>
                 <span style={{ flex: 1, color: '#9d8fff', fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</span>
                 {doc.type?.includes('pdf') && (
-                  <button onClick={() => setViewDoc(doc)} style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#aaa', borderRadius: '5px', fontSize: '11px', padding: '2px 8px', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>View</button>
+                  <>
+                    <button onClick={() => setViewDoc(doc)} style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#aaa', borderRadius: '5px', fontSize: '11px', padding: '2px 8px', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>View</button>
+                    <button
+                      onClick={async () => {
+                        setCimPreviewSource('cim'); setCimParsing(true); setCimPreview(null)
+                        try {
+                          const res = await fetch('/api/parse-cim', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: doc.url }) })
+                          const parsed = await res.json()
+                          if (parsed.error) {
+                            alert('CIM parsing failed: ' + parsed.error)
+                          } else {
+                            setCimPreview(parsed)
+                          }
+                        } catch (err) {
+                          alert('CIM parsing error: ' + err.message)
+                        }
+                        setCimParsing(false)
+                      }}
+                      style={{ background: 'rgba(124,106,247,0.1)', border: '1px solid #4a3fa0', color: '#9d8fff', borderRadius: '5px', fontSize: '11px', padding: '2px 8px', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}
+                    >
+                      {cimParsing ? '…' : 'Update deal'}
+                    </button>
+                  </>
                 )}
                 <a href={doc.url} target="_blank" rel="noopener noreferrer" style={{ color: '#444', fontSize: '11px', textDecoration: 'none', flexShrink: 0 }}>↗</a>
                 <span style={{ color: '#333', fontSize: '11px', flexShrink: 0 }}>{fmtSize(doc.size)}</span>
@@ -459,18 +787,31 @@ export default function DealPage() {
 
           {/* Buyer Universe */}
           <div style={card}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', gap: '10px' }}>
               <div>
                 <span style={sectionLabel}>Buyer Universe</span>
                 <div style={{ color: '#444', fontSize: '11px', marginTop: '-10px' }}>AI-generated · opens PitchBook profile</div>
               </div>
-              <button
-                onClick={findBuyers}
-                disabled={buyerLoading}
-                style={{ background: 'rgba(124,106,247,0.1)', border: '1px solid #4a3fa0', color: '#9d8fff', borderRadius: '6px', padding: '6px 14px', cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
-              >
-                {buyerLoading ? 'Searching…' : buyerUniverse.length ? '↺ Refresh' : '✦ Find Buyers'}
-              </button>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+                <select
+                  value={buyerTypeSelect}
+                  onChange={e => setBuyerTypeSelect(e.target.value)}
+                  style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '6px', color: buyerTypeSelect ? '#ccc' : '#555', fontSize: '12px', padding: '6px 10px', fontFamily: 'inherit', outline: 'none', cursor: 'pointer' }}
+                >
+                  <option value=''>All types</option>
+                  <option value='PE'>PE</option>
+                  <option value='Strategic'>Strategic</option>
+                  <option value='Family Office'>Family Office</option>
+                  <option value='Growth Equity'>Growth Equity</option>
+                </select>
+                <button
+                  onClick={findBuyers}
+                  disabled={buyerLoading}
+                  style={{ background: 'rgba(124,106,247,0.1)', border: '1px solid #4a3fa0', color: '#9d8fff', borderRadius: '6px', padding: '6px 14px', cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
+                >
+                  {buyerLoading ? 'Searching…' : buyerUniverse.length ? '↺ Refresh' : '✦ Find Buyers'}
+                </button>
+              </div>
             </div>
 
             {buyerLoading && (
@@ -481,46 +822,26 @@ export default function DealPage() {
 
             {!buyerLoading && buyerUniverse.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {/* Type filter legend */}
-                <div style={{ display: 'flex', gap: '12px', marginBottom: '4px', flexWrap: 'wrap' }}>
-                  {['PE', 'Strategic', 'Family Office', 'Growth Equity'].map(type => {
-                    const count = buyerUniverse.filter(b => b.type === type).length
-                    if (!count) return null
-                    const colors = { PE: '#6366f1', Strategic: '#f59e0b', 'Family Office': '#10b981', 'Growth Equity': '#3b82f6' }
-                    return (
-                      <span key={type} style={{ fontSize: '10px', color: colors[type] || '#888' }}>
-                        ● {type} ({count})
-                      </span>
-                    )
-                  })}
-                </div>
+                <input
+                  value={buyerSearch}
+                  onChange={e => setBuyerSearch(e.target.value)}
+                  placeholder="Search buyers…"
+                  style={{ background: '#111', border: '1px solid #222', borderRadius: '6px', color: '#ccc', fontSize: '12px', padding: '6px 10px', fontFamily: 'inherit', outline: 'none', width: '100%', boxSizing: 'border-box' }}
+                />
 
-                {buyerUniverse.map((buyer, i) => {
-                  const typeColors = { PE: { bg: 'rgba(99,102,241,0.1)', text: '#818cf8', border: 'rgba(99,102,241,0.3)' }, Strategic: { bg: 'rgba(245,158,11,0.1)', text: '#fbbf24', border: 'rgba(245,158,11,0.3)' }, 'Family Office': { bg: 'rgba(16,185,129,0.1)', text: '#34d399', border: 'rgba(16,185,129,0.3)' }, 'Growth Equity': { bg: 'rgba(59,130,246,0.1)', text: '#60a5fa', border: 'rgba(59,130,246,0.3)' } }
-                  const tc = typeColors[buyer.type] || { bg: 'rgba(255,255,255,0.05)', text: '#888', border: '#333' }
-                  const pbUrl = `https://app.pitchbook.com/search?q=${encodeURIComponent(buyer.pitchbook_query || buyer.name)}`
-
-                  return (
-                    <div key={i} style={{ background: '#141414', border: '1px solid #1f1f1f', borderRadius: '8px', padding: '12px 14px', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px', flexWrap: 'wrap' }}>
-                          <span style={{ fontFamily: 'Syne, sans-serif', fontSize: '13px', fontWeight: 600, color: '#f0f0f0' }}>{buyer.name}</span>
-                          <span style={{ background: tc.bg, color: tc.text, border: `1px solid ${tc.border}`, borderRadius: '4px', fontSize: '10px', padding: '1px 7px', flexShrink: 0 }}>{buyer.type}</span>
-                        </div>
-                        <div style={{ color: '#666', fontSize: '12px', lineHeight: 1.5 }}>{buyer.thesis}</div>
-                      </div>
-                      <a
-                        href={pbUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        title="View on PitchBook"
-                        style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '4px', background: '#1a1a2e', border: '1px solid #2a2a4a', borderRadius: '6px', padding: '5px 10px', textDecoration: 'none', color: '#9d8fff', fontSize: '11px', whiteSpace: 'nowrap', marginTop: '2px' }}
-                      >
-                        PitchBook ↗
-                      </a>
-                    </div>
-                  )
-                })}
+                {buyerUniverse
+                  .filter(b => !buyerTypeSelect || b.type === buyerTypeSelect)
+                  .filter(b => !buyerSearch || b.name?.toLowerCase().includes(buyerSearch.toLowerCase()) || b.thesis?.toLowerCase().includes(buyerSearch.toLowerCase()))
+                  .map((buyer, i) => (
+                    <BuyerUniverseRow
+                      key={i}
+                      buyer={buyer}
+                      onUpdate={updateBuyerUniverse}
+                      onAddToContacts={addBuyerUniverseToContacts}
+                      onAddToBuyers={addBuyerUniverseToBuyers}
+                      isInBuyers={buyers.some(b => b.name === buyer.name)}
+                    />
+                  ))}
               </div>
             )}
 
@@ -542,19 +863,21 @@ export default function DealPage() {
             {[
               { label: 'Raise', value: formatCurrency(deal.raise_amount) },
               { label: 'Valuation', value: formatCurrency(deal.valuation) },
+              deal.fee_pct != null && { label: 'Fee %', value: `${deal.fee_pct}%` },
+              deal.fee_pct != null && deal.raise_amount && { label: 'Est. Fee', value: formatCurrency(deal.raise_amount * deal.fee_pct / 100), highlight: true },
               { label: 'Sector', value: deal.sector },
               { label: 'Owner', value: deal.deal_owner },
               { label: 'Added', value: formatDate(deal.created_at) },
-            ].filter(r => r.value && r.value !== '—').map(r => (
+            ].filter(r => r && r.value && r.value !== '—').map(r => (
               <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                 <span style={metaKey}>{r.label}</span>
-                <span style={metaVal}>{r.value}</span>
+                <span style={{ ...metaVal, color: r.highlight ? '#9d8fff' : '#ccc', fontWeight: r.highlight ? 600 : 500 }}>{r.value}</span>
               </div>
             ))}
             {deal.website && (
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                 <span style={metaKey}>Website</span>
-                <a href={deal.website} target="_blank" rel="noopener noreferrer" style={{ ...metaVal, color: '#9d8fff' }}>{deal.website}</a>
+                <a href={deal.website.startsWith('http') ? deal.website : `https://${deal.website}`} onClick={e => e.stopPropagation()} target="_blank" rel="noopener noreferrer" style={{ ...metaVal, color: '#9d8fff' }}>{deal.website}</a>
               </div>
             )}
             <div style={{ marginTop: '12px' }}>
@@ -592,13 +915,13 @@ export default function DealPage() {
               </div>
             </div>
             {buyers.map(b => (
-              <div key={b.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                <span style={{ flex: 1, color: '#ccc', fontSize: '12px' }}>{b.name}</span>
-                <button onClick={() => toggleBuyer(b.id)} style={{ background: b.status === 'Active' ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)', color: b.status === 'Active' ? '#4ade80' : '#f87171', border: `1px solid ${b.status === 'Active' ? '#166534' : '#991b1b'}`, borderRadius: '4px', fontSize: '10px', padding: '2px 8px', cursor: 'pointer', fontFamily: 'inherit' }}>
-                  {b.status}
-                </button>
-                <button style={iconBtn} onClick={() => removeBuyer(b.id)} onMouseEnter={e => e.currentTarget.style.color = '#f87171'} onMouseLeave={e => e.currentTarget.style.color = '#333'}>×</button>
-              </div>
+              <BuyerRow
+                key={b.id}
+                buyer={b}
+                onToggle={() => toggleBuyer(b.id)}
+                onRemove={() => removeBuyer(b.id)}
+                onUpdate={updateBuyer}
+              />
             ))}
             <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
               <input style={{ ...inputStyle, flex: 1 }} placeholder="Buyer name" value={newBuyer} onChange={e => setNewBuyer(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') addBuyer() }} />
