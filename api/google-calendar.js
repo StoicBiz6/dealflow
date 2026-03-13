@@ -14,10 +14,9 @@ const supabase = createClient(
 )
 
 // Canonical redirect URI — must match Google Cloud Console exactly
-const getRedirectUri = () =>
-  `${process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : 'https://dealflow-zeta.vercel.app'}/api/google-calendar?action=callback`
+// Use VERCEL_PROJECT_PRODUCTION_URL (stable alias) not VERCEL_URL (per-deploy URL)
+const PRODUCTION_URL = 'https://dealflow-zeta.vercel.app'
+const getRedirectUri = () => `${PRODUCTION_URL}/api/google-calendar?action=callback`
 
 async function refreshAccessToken(refreshToken) {
   const res = await fetch('https://oauth2.googleapis.com/token', {
