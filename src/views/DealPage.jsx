@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { UserButton } from '@clerk/clerk-react'
+import { UserButton, useUser } from '@clerk/clerk-react'
 import { supabase } from '../lib/supabase'
 import { STAGES, STAGE_COLORS, SECTORS } from '../lib/constants'
 import { formatCurrency, formatDate } from '../lib/utils'
@@ -181,6 +181,7 @@ const ACT_ICONS = { call: '📞', email: '✉️', meeting: '👥', note: '📝'
 export default function DealPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { user } = useUser()
   const [deal, setDeal] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -206,10 +207,13 @@ export default function DealPage() {
   const [aiLoading, setAiLoading] = useState(false)
   const [viewDoc, setViewDoc] = useState(null)            // PDF viewer
   const [emailPanel, setEmailPanel] = useState(false)     // email composer
+  const [emailTo, setEmailTo] = useState('')
   const [emailSubject, setEmailSubject] = useState('')
   const [emailBody, setEmailBody] = useState('')
   const [emailLoading, setEmailLoading] = useState(false)
   const [emailCopied, setEmailCopied] = useState(false)
+  const [emailSending, setEmailSending] = useState(false)
+  const [emailSent, setEmailSent] = useState(false)
   const [buyerUniverse, setBuyerUniverse] = useState([])  // saved buyer universe (persisted)
   const [buyerLoading, setBuyerLoading] = useState(false)
   const [buyerTypeFilter, setBuyerTypeFilter] = useState(null)  // null = all
@@ -223,6 +227,26 @@ export default function DealPage() {
   const [newsLoading, setNewsLoading] = useState(false)
   const [newsCollapsed, setNewsCollapsed] = useState(false)
   const [buyerUniverseCollapsed, setBuyerUniverseCollapsed] = useState(false)
+  // CIM Q&A
+  const [cimMessages, setCimMessages] = useState([])
+  const [cimInput, setCimInput] = useState('')
+  const [cimQALoading, setCimQALoading] = useState(false)
+  // Comparable Valuation
+  const [compValuation, setCompValuation] = useState(null)
+  const [compValLoading, setCompValLoading] = useState(false)
+  // Comments
+  const [comments, setComments] = useState([])
+  const [commentInput, setCommentInput] = useState('')
+  const [commentsCollapsed, setCommentsCollapsed] = useState(false)
+  // Deal Room Share
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [shareEmailInput, setShareEmailInput] = useState('')
+  const [sharedWith, setSharedWith] = useState([])
+  const [shareSaving, setShareSaving] = useState(false)
+  // Google Calendar
+  const [calSyncing, setCalSyncing] = useState(false)
+  const [calEventUrl, setCalEventUrl] = useState(null)
+  const [hasGoogleAuth, setHasGoogleAuth] = useState(false)
 
   // Fetch deal
   useEffect(() => {
@@ -243,7 +267,14 @@ export default function DealPage() {
       setDocuments(data.documents || [])
       setTimeline(data.timeline_to_close || '')
       setBuyerUniverse(data.buyer_universe || [])
+      setComments(data.comments || [])
+      setSharedWith(data.shared_with || [])
       setLoading(false)
+      // Check if user has Google Calendar auth
+      if (data.user_id) {
+        supabase.from('user_google_tokens').select('user_id').eq('user_id', data.user_id).single()
+          .then(({ data: tok }) => setHasGoogleAuth(!!tok))
+      }
     }
     load()
   }, [id])
@@ -411,6 +442,7 @@ export default function DealPage() {
     if (cimPreview.metrics && Object.keys(cimPreview.metrics).length) { updates.metrics = cimPreview.metrics; setMetrics(cimPreview.metrics) }
     if (cimPreview.contacts?.length) { updates.contacts = cimPreview.contacts; setContacts(cimPreview.contacts) }
     if (cimPreview.co_investors?.length) { updates.co_investors = cimPreview.co_investors; setCoInvestors(cimPreview.co_investors) }
+    if (cimPreview.score && typeof cimPreview.score === 'object') { updates.score = cimPreview.score; setScore(cimPreview.score) }
     if (Object.keys(updates).length === 0) {
       alert('No extractable fields found in this document. It may not be a CIM or the document is not machine-readable.')
       setCimPreview(null)
@@ -631,6 +663,146 @@ export default function DealPage() {
     setTimeout(() => setEmailCopied(false), 2000)
   }
 
+  const sendEmailViaResend = async () => {
+    if (!emailTo.trim() || !emailSubject.trim() || !emailBody.trim()) {
+      alert('Please fill in recipient, subject, and body before sending.')
+      return
+    }
+    setEmailSending(true)
+    try {
+      const res = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to: emailTo.trim(), subject: emailSubject, body: emailBody }),
+      })
+      const data = await res.json()
+      if (data.error) {
+        alert('Send failed: ' + data.error)
+      } else {
+        setEmailSent(true)
+        setTimeout(() => setEmailSent(false), 3000)
+        // Log to activity
+        const logEntry = { id: crypto.randomUUID(), type: 'email', note: `Email sent to ${emailTo}: "${emailSubject}"`, date: new Date().toISOString() }
+        const next = [logEntry, ...activity]
+        setActivity(next)
+        save({ activity_log: next })
+      }
+    } catch (e) {
+      alert('Send error: ' + e.message)
+    }
+    setEmailSending(false)
+  }
+
+  // CIM Q&A
+  const askCimQuestion = async () => {
+    const q = cimInput.trim()
+    if (!q || cimQALoading) return
+    setCimMessages(prev => [...prev, { role: 'user', text: q }])
+    setCimInput('')
+    setCimQALoading(true)
+    try {
+      const res = await fetch('/api/cim-qa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: q, deal: { ...deal, memo, metrics, score } }),
+      })
+      const data = await res.json()
+      if (data.error) {
+        setCimMessages(prev => [...prev, { role: 'assistant', text: 'Error: ' + data.error }])
+      } else {
+        setCimMessages(prev => [...prev, { role: 'assistant', text: data.answer }])
+      }
+    } catch (e) {
+      setCimMessages(prev => [...prev, { role: 'assistant', text: 'Error: ' + e.message }])
+    }
+    setCimQALoading(false)
+  }
+
+  // Comparable Valuation
+  const loadComparableValuation = async () => {
+    setCompValLoading(true)
+    try {
+      const res = await fetch('/api/comparable-valuation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deal: { ...deal, memo, metrics } }),
+      })
+      const data = await res.json()
+      if (data.error) alert('Valuation error: ' + data.error)
+      else setCompValuation(data)
+    } catch (e) {
+      alert('Valuation error: ' + e.message)
+    }
+    setCompValLoading(false)
+  }
+
+  // Comments
+  const addComment = () => {
+    if (!commentInput.trim() || !user) return
+    const newComment = {
+      id: crypto.randomUUID(),
+      user_id: user.id,
+      user_name: user.fullName || user.firstName || user.emailAddresses?.[0]?.emailAddress || 'User',
+      text: commentInput.trim(),
+      created_at: new Date().toISOString(),
+    }
+    const next = [newComment, ...comments]
+    setComments(next)
+    setCommentInput('')
+    save({ comments: next })
+  }
+  const removeComment = (cid) => {
+    const next = comments.filter(c => c.id !== cid)
+    setComments(next)
+    save({ comments: next })
+  }
+
+  // Deal Room Share
+  const saveShareList = async (emails) => {
+    setShareSaving(true)
+    await save({ shared_with: emails })
+    setSharedWith(emails)
+    setShareSaving(false)
+  }
+  const addShareEmail = () => {
+    const email = shareEmailInput.trim().toLowerCase()
+    if (!email || sharedWith.includes(email)) { setShareEmailInput(''); return }
+    const next = [...sharedWith, email]
+    setShareEmailInput('')
+    saveShareList(next)
+  }
+  const removeShareEmail = (email) => {
+    saveShareList(sharedWith.filter(e => e !== email))
+  }
+  const copyShareLink = () => {
+    const link = `${window.location.origin}/deal-room/${id}`
+    navigator.clipboard.writeText(link)
+    alert(`Copied: ${link}\n\nShare this link with: ${sharedWith.join(', ') || '(no one yet)'}`)
+  }
+
+  // Google Calendar
+  const syncToCalendar = async () => {
+    if (!hasGoogleAuth) {
+      // Redirect to Google OAuth
+      window.location.href = `/api/google-auth?userId=${user?.id}&returnTo=/deal/${id}`
+      return
+    }
+    setCalSyncing(true)
+    try {
+      const res = await fetch('/api/google-calendar-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deal: { ...deal, memo }, userId: user?.id }),
+      })
+      const data = await res.json()
+      if (data.error) alert('Calendar sync error: ' + data.error)
+      else if (data.htmlLink) setCalEventUrl(data.htmlLink)
+    } catch (e) {
+      alert('Calendar sync error: ' + e.message)
+    }
+    setCalSyncing(false)
+  }
+
   const avgScore = () => {
     const vals = Object.values(score).filter(v => v > 0)
     return vals.length ? (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1) : null
@@ -666,6 +838,24 @@ export default function DealPage() {
           style={{ background: voiceListening ? 'rgba(239,68,68,0.12)' : 'rgba(124,106,247,0.1)', border: `1px solid ${voiceListening ? '#991b1b' : '#4a3fa0'}`, color: voiceListening ? '#f87171' : '#9d8fff', borderRadius: '6px', padding: '5px 14px', cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: '5px', transition: 'all 0.2s' }}
         >
           {voiceListening ? <>● <span>Listening…</span></> : <>🎤 <span>Voice</span></>}
+        </button>
+        <button
+          onClick={syncToCalendar}
+          disabled={calSyncing}
+          title={hasGoogleAuth ? 'Sync deal to Google Calendar' : 'Connect Google Calendar'}
+          style={{ background: calEventUrl ? 'rgba(74,222,128,0.08)' : 'transparent', border: `1px solid ${calEventUrl ? '#166534' : '#2a2a2a'}`, color: calEventUrl ? '#4ade80' : '#555', borderRadius: '6px', padding: '5px 12px', cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
+        >
+          {calSyncing ? '…' : calEventUrl ? '📅 Synced' : '📅 Calendar'}
+        </button>
+        {calEventUrl && (
+          <a href={calEventUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#4ade80', fontSize: '11px', textDecoration: 'none' }}>↗</a>
+        )}
+        <button
+          onClick={() => setShowShareModal(true)}
+          title="Share deal room with clients"
+          style={{ background: sharedWith.length ? 'rgba(124,106,247,0.1)' : 'transparent', border: `1px solid ${sharedWith.length ? '#4a3fa0' : '#2a2a2a'}`, color: sharedWith.length ? '#9d8fff' : '#555', borderRadius: '6px', padding: '5px 12px', cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
+        >
+          🔗 Share
         </button>
         <button onClick={handleDelete} style={{ background: 'none', border: '1px solid #2a2a2a', color: '#f87171', borderRadius: '6px', padding: '5px 14px', cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit' }}>Delete</button>
         <UserButton afterSignOutUrl="/" />
@@ -727,6 +917,49 @@ export default function DealPage() {
               onChange={e => handleMemoChange(e.target.value)}
             />
           </div>
+
+          {/* CIM Q&A — shown only when memo exists */}
+          {memo && (
+            <div style={card}>
+              <span style={sectionLabel}>Ask About This Deal</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px', maxHeight: '280px', overflowY: 'auto' }}>
+                {cimMessages.length === 0 && (
+                  <div style={{ color: '#333', fontSize: '12px' }}>Ask anything about the memo, metrics, or deal terms.</div>
+                )}
+                {cimMessages.map((m, i) => (
+                  <div key={i} style={{
+                    padding: '8px 12px',
+                    background: m.role === 'user' ? '#1a1a2e' : '#141414',
+                    border: `1px solid ${m.role === 'user' ? 'rgba(124,106,247,0.2)' : '#1f1f1f'}`,
+                    borderRadius: '8px',
+                    alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
+                    maxWidth: '90%',
+                  }}>
+                    <div style={{ color: m.role === 'user' ? '#9d8fff' : '#ccc', fontSize: '12px', lineHeight: 1.6 }}>{m.text}</div>
+                  </div>
+                ))}
+                {cimQALoading && (
+                  <div style={{ color: '#555', fontSize: '12px', padding: '4px 12px' }}>Thinking…</div>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  style={{ ...inputStyle, flex: 1 }}
+                  placeholder="What are the key risks? What's the revenue model? …"
+                  value={cimInput}
+                  onChange={e => setCimInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); askCimQuestion() } }}
+                />
+                <button
+                  onClick={askCimQuestion}
+                  disabled={!cimInput.trim() || cimQALoading}
+                  style={{ background: 'rgba(124,106,247,0.1)', border: '1px solid #4a3fa0', color: cimInput.trim() ? '#9d8fff' : '#555', borderRadius: '6px', padding: '7px 14px', cursor: cimInput.trim() ? 'pointer' : 'default', fontSize: '12px', fontFamily: 'inherit', flexShrink: 0 }}
+                >
+                  Ask
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Key Metrics */}
           <div style={card}>
@@ -825,6 +1058,48 @@ export default function DealPage() {
               </div>
             ))}
             {tasks.length === 0 && <div style={{ color: '#333', fontSize: '12px' }}>No tasks yet</div>}
+          </div>
+
+          {/* Comments Thread */}
+          <div style={card}>
+            <div
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: commentsCollapsed ? 0 : '14px', cursor: 'pointer' }}
+              onClick={() => setCommentsCollapsed(x => !x)}
+            >
+              <span style={{ ...sectionLabel, margin: 0 }}>Notes & Comments {comments.length > 0 && <span style={{ color: '#555', fontWeight: 400 }}>({comments.length})</span>}</span>
+              <span style={{ color: '#333', fontSize: '12px', userSelect: 'none' }}>{commentsCollapsed ? '▸' : '▾'}</span>
+            </div>
+            {!commentsCollapsed && (
+              <>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }} onClick={e => e.stopPropagation()}>
+                  <input
+                    style={{ ...inputStyle, flex: 1 }}
+                    placeholder="Add a note or comment…"
+                    value={commentInput}
+                    onChange={e => setCommentInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addComment() } }}
+                  />
+                  <button onClick={addComment} style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#aaa', borderRadius: '6px', padding: '7px 14px', cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', flexShrink: 0 }}>Post</button>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {comments.map(c => (
+                    <div key={c.id} style={{ background: '#141414', border: '1px solid #1f1f1f', borderRadius: '8px', padding: '10px 12px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+                        <span style={{ color: '#7c6af7', fontSize: '11px', fontWeight: 600 }}>{c.user_name}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ color: '#333', fontSize: '10px' }}>{formatDate(c.created_at)}</span>
+                          {c.user_id === user?.id && (
+                            <button style={{ ...iconBtn, fontSize: '12px' }} onClick={() => removeComment(c.id)} onMouseEnter={e => e.currentTarget.style.color = '#f87171'} onMouseLeave={e => e.currentTarget.style.color = '#333'}>×</button>
+                          )}
+                        </div>
+                      </div>
+                      <div style={{ color: '#ccc', fontSize: '12px', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{c.text}</div>
+                    </div>
+                  ))}
+                  {comments.length === 0 && <div style={{ color: '#333', fontSize: '12px' }}>No comments yet. Add internal notes or collaborate with your team.</div>}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Documents */}
@@ -1131,6 +1406,70 @@ export default function DealPage() {
                 <Stars value={score[key] || 0} onChange={val => handleScore(key, val)} />
               </div>
             ))}
+            {score.rationale && (
+              <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #1f1f1f', color: '#555', fontSize: '11px', lineHeight: 1.6 }}>
+                {score.rationale}
+              </div>
+            )}
+          </div>
+
+          {/* Comparable Valuation */}
+          <div style={card}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: compValuation ? '14px' : '0' }}>
+              <span style={sectionLabel}>Comparable Valuation</span>
+              <button
+                onClick={loadComparableValuation}
+                disabled={compValLoading}
+                style={{ background: 'rgba(124,106,247,0.1)', border: '1px solid #4a3fa0', color: '#9d8fff', borderRadius: '6px', padding: '5px 12px', cursor: compValLoading ? 'default' : 'pointer', fontSize: '12px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
+              >
+                {compValLoading ? 'Analyzing…' : compValuation ? '↺ Refresh' : '✦ Run Analysis'}
+              </button>
+            </div>
+            {!compValuation && !compValLoading && (
+              <div style={{ color: '#333', fontSize: '12px' }}>AI-powered valuation range based on comparable transactions.</div>
+            )}
+            {compValLoading && (
+              <div style={{ color: '#555', fontSize: '12px', padding: '8px 0' }}>Analyzing comparable transactions…</div>
+            )}
+            {compValuation && !compValLoading && (
+              <div>
+                {/* Range bar */}
+                <div style={{ marginBottom: '14px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <span style={{ color: '#555', fontSize: '11px' }}>{formatCurrency(compValuation.low)}</span>
+                    <span style={{ color: '#9d8fff', fontSize: '14px', fontWeight: 700, fontFamily: 'Syne, sans-serif' }}>{formatCurrency(compValuation.mid)}</span>
+                    <span style={{ color: '#555', fontSize: '11px' }}>{formatCurrency(compValuation.high)}</span>
+                  </div>
+                  <div style={{ height: '6px', background: '#1a1a1a', borderRadius: '3px', overflow: 'hidden', position: 'relative' }}>
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, rgba(124,106,247,0.2), rgba(124,106,247,0.8), rgba(124,106,247,0.2))', borderRadius: '3px' }} />
+                  </div>
+                  <div style={{ color: '#555', fontSize: '10px', marginTop: '5px' }}>{compValuation.multiple_used} · {compValuation.method}</div>
+                </div>
+                {/* Rationale */}
+                {compValuation.rationale && (
+                  <div style={{ color: '#666', fontSize: '11px', lineHeight: 1.6, marginBottom: '12px' }}>{compValuation.rationale}</div>
+                )}
+                {/* Comps */}
+                {compValuation.comps?.length > 0 && (
+                  <div>
+                    <div style={{ color: '#444', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>Comparable Transactions</div>
+                    {compValuation.comps.map((c, i) => (
+                      <div key={i} style={{ background: '#141414', border: '1px solid #1f1f1f', borderRadius: '6px', padding: '8px 10px', marginBottom: '5px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                          <span style={{ color: '#e5e5e5', fontSize: '12px', fontWeight: 600 }}>{c.company}</span>
+                          <span style={{ color: '#9d8fff', fontSize: '11px' }}>{c.value}</span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', marginBottom: c.notes ? '3px' : 0 }}>
+                          <span style={{ color: '#555', fontSize: '10px' }}>{c.date}</span>
+                          <span style={{ color: '#444', fontSize: '10px' }}>{c.multiple}</span>
+                        </div>
+                        {c.notes && <div style={{ color: '#444', fontSize: '10px', lineHeight: 1.5 }}>{c.notes}</div>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Buyers */}
@@ -1193,11 +1532,16 @@ export default function DealPage() {
 
             {emailPanel && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {contacts.filter(c => c.email).length > 0 && (
-                  <div style={{ fontSize: '11px', color: '#555', marginBottom: '4px' }}>
-                    To: {contacts.filter(c => c.email).map(c => c.email).join(', ')}
-                  </div>
-                )}
+                <div>
+                  <div style={{ color: '#555', fontSize: '10px', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>To</div>
+                  <input
+                    style={inputStyle}
+                    value={emailTo}
+                    onChange={e => setEmailTo(e.target.value)}
+                    placeholder={contacts.filter(c => c.email)[0]?.email || 'recipient@example.com'}
+                    onFocus={() => { if (!emailTo && contacts.filter(c => c.email).length) setEmailTo(contacts.filter(c => c.email)[0].email) }}
+                  />
+                </div>
                 <div>
                   <div style={{ color: '#555', fontSize: '10px', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Subject</div>
                   <input
@@ -1218,10 +1562,17 @@ export default function DealPage() {
                 </div>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   <button
-                    onClick={openMailto}
-                    style={{ background: '#7c6af7', border: 'none', color: '#fff', borderRadius: '6px', padding: '7px 14px', cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', fontWeight: 600 }}
+                    onClick={sendEmailViaResend}
+                    disabled={emailSending || !emailTo.trim()}
+                    style={{ background: emailSent ? 'rgba(74,222,128,0.12)' : '#7c6af7', border: emailSent ? '1px solid #166534' : 'none', color: emailSent ? '#4ade80' : '#fff', borderRadius: '6px', padding: '7px 14px', cursor: emailSending ? 'default' : 'pointer', fontSize: '12px', fontFamily: 'inherit', fontWeight: 600 }}
                   >
-                    Open in Email Client
+                    {emailSending ? 'Sending…' : emailSent ? '✓ Sent!' : '↑ Send'}
+                  </button>
+                  <button
+                    onClick={openMailto}
+                    style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#aaa', borderRadius: '6px', padding: '7px 14px', cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit' }}
+                  >
+                    Open in Mail App
                   </button>
                   <button
                     onClick={copyEmailBody}
@@ -1271,6 +1622,90 @@ export default function DealPage() {
       {/* ── Edit modal ── */}
       {showEditModal && (
         <DealModal deal={deal} onSave={handleEditSave} onClose={() => setShowEditModal(false)} />
+      )}
+
+      {/* ── Share / Deal Room Modal ── */}
+      {showShareModal && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+          onClick={e => { if (e.target === e.currentTarget) setShowShareModal(false) }}
+        >
+          <div style={{ background: '#111', border: '1px solid #2a2a2a', borderRadius: '12px', padding: '28px', width: '100%', maxWidth: '480px' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div>
+                <div style={{ fontFamily: 'Syne, sans-serif', fontSize: '16px', fontWeight: 700, color: '#f0f0f0', marginBottom: '4px' }}>Share Deal Room</div>
+                <div style={{ color: '#555', fontSize: '12px' }}>Clients must sign in to view the read-only deal summary</div>
+              </div>
+              <button onClick={() => setShowShareModal(false)} style={{ background: 'none', border: 'none', color: '#444', cursor: 'pointer', fontSize: '20px', lineHeight: 1, padding: '0 4px' }}>✕</button>
+            </div>
+
+            {/* Add email */}
+            <div style={{ marginBottom: '20px' }}>
+              <div style={{ color: '#555', fontSize: '10px', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Add client email</div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  style={{ ...inputStyle, flex: 1 }}
+                  placeholder="client@company.com"
+                  value={shareEmailInput}
+                  onChange={e => setShareEmailInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') addShareEmail() }}
+                />
+                <button
+                  onClick={addShareEmail}
+                  disabled={!shareEmailInput.trim() || shareSaving}
+                  style={{ background: 'rgba(124,106,247,0.1)', border: '1px solid #4a3fa0', color: '#9d8fff', borderRadius: '6px', padding: '7px 14px', cursor: shareEmailInput.trim() ? 'pointer' : 'default', fontSize: '12px', fontFamily: 'inherit', flexShrink: 0 }}
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+
+            {/* Current share list */}
+            <div style={{ marginBottom: '20px' }}>
+              <div style={{ color: '#555', fontSize: '10px', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Access granted to {sharedWith.length === 0 ? 'nobody yet' : `${sharedWith.length} person${sharedWith.length !== 1 ? 's' : ''}`}
+              </div>
+              {sharedWith.length === 0 ? (
+                <div style={{ color: '#333', fontSize: '12px', padding: '8px 0' }}>No one has access yet. Add emails above.</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {sharedWith.map(email => (
+                    <div key={email} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#141414', border: '1px solid #1f1f1f', borderRadius: '6px', padding: '8px 12px' }}>
+                      <span style={{ flex: 1, color: '#ccc', fontSize: '12px' }}>{email}</span>
+                      <button
+                        onClick={() => removeShareEmail(email)}
+                        style={{ background: 'none', border: 'none', color: '#333', cursor: 'pointer', fontSize: '14px', padding: '0 4px', lineHeight: 1 }}
+                        onMouseEnter={e => e.currentTarget.style.color = '#f87171'}
+                        onMouseLeave={e => e.currentTarget.style.color = '#333'}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Share link */}
+            <div style={{ background: '#141414', border: '1px solid #1f1f1f', borderRadius: '8px', padding: '12px 14px', marginBottom: '16px' }}>
+              <div style={{ color: '#555', fontSize: '10px', marginBottom: '5px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Deal Room URL</div>
+              <div style={{ color: '#9d8fff', fontSize: '12px', wordBreak: 'break-all', marginBottom: '8px' }}>
+                {window.location.origin}/deal-room/{id}
+              </div>
+              <button
+                onClick={copyShareLink}
+                style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#aaa', borderRadius: '6px', padding: '5px 14px', cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit' }}
+              >
+                Copy Link
+              </button>
+            </div>
+
+            <div style={{ color: '#333', fontSize: '11px', lineHeight: 1.6 }}>
+              Recipients must sign in with the email address you listed above. They'll see a read-only view of the company overview, stage, financials, and investment memo.
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

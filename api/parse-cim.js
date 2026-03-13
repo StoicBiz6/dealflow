@@ -17,7 +17,7 @@ export default async function handler(req, res) {
 
     const response = await client.messages.create({
       model: 'claude-sonnet-4-5',
-      max_tokens: 3000,
+      max_tokens: 3500,
       messages: [{
         role: 'user',
         content: [
@@ -65,7 +65,15 @@ export default async function handler(req, res) {
       "firm": "parent firm if different, or same as name",
       "committed": "amount committed as string e.g. '$10M' or empty string"
     }
-  ]
+  ],
+  "score": {
+    "team": 3,
+    "market": 3,
+    "traction": 3,
+    "terms": 3,
+    "overall": 3,
+    "rationale": "2-3 sentence explanation of the scores highlighting key strengths and weaknesses"
+  }
 }
 
 Rules:
@@ -73,6 +81,12 @@ Rules:
 - co_investors: include existing investors or co-investors mentioned (max 5), empty array if none
 - metrics: only fill fields with actual data from the document, use null for anything not found
 - All dollar amounts for raise_amount and valuation must be plain numbers (no $ sign)
+- score: rate each dimension 1-5 (1=weak, 3=average, 5=exceptional) based on what the CIM reveals
+  - team: management depth, track record, relevant experience
+  - market: TAM size, growth rate, competitive dynamics
+  - traction: revenue, growth, customer proof points, product maturity
+  - terms: valuation attractiveness, deal structure, use of funds clarity
+  - overall: holistic deal quality as an M&A/fundraising opportunity
 - Return ONLY the JSON object. No markdown, no explanation.`,
           },
         ],

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useUser } from '@clerk/clerk-react'
 import { supabase } from '../lib/supabase'
+import { STAGE_CHECKLISTS } from '../lib/constants'
 
 export function useDeals(workspaceId = null) {
   const { user, isLoaded } = useUser()
@@ -70,7 +71,22 @@ export function useDeals(workspaceId = null) {
     setDeals(prev => prev.filter(d => d.id !== id))
   }
 
-  const updateStage = async (id, stage) => updateDeal(id, { stage })
+  const updateStage = async (id, stage) => {
+    const deal = deals.find(d => d.id === id)
+    const existing = deal?.tasks || []
+    const existingSet = new Set(existing.map(t => t.content))
+    const checklistItems = STAGE_CHECKLISTS[stage] || []
+    const newTasks = checklistItems
+      .filter(c => !existingSet.has(c))
+      .map(c => ({
+        id: crypto.randomUUID(),
+        content: c,
+        done: false,
+        created_at: new Date().toISOString(),
+      }))
+    const mergedTasks = [...existing, ...newTasks]
+    return updateDeal(id, { stage, tasks: mergedTasks })
+  }
 
   return { deals, loading, error, addDeal, updateDeal, deleteDeal, updateStage, refetch: fetchDeals }
 }

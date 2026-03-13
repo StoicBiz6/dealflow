@@ -23,6 +23,39 @@ export const SECTORS = [
   'Sports', 'Healthcare', 'Consumer', 'Finance', 'Real Estate', 'Other',
 ]
 
+export const STAGE_CHECKLISTS = {
+  'Investor Targeting': [
+    'Prepare investor teaser / one-pager',
+    'Build target investor list',
+    'Send initial outreach emails',
+    'Schedule intro calls with top targets',
+  ],
+  'Diligence': [
+    'Set up data room',
+    'Collect 3 years of financial statements',
+    'Schedule management Q&A call',
+    'Prepare diligence tracker',
+  ],
+  'Term Sheet': [
+    'Review term sheet with client',
+    'Engage legal counsel',
+    'Confirm closing timeline with all parties',
+    'Negotiate key economic terms',
+  ],
+  'Negotiation': [
+    'Negotiate remaining open issues',
+    'Review final purchase agreement draft',
+    'Confirm fee structure and closing mechanics',
+    'Coordinate signing logistics',
+  ],
+  'Closed': [
+    'Collect all closing documentation',
+    'Issue closing invoice',
+    'Request client testimonial / referral',
+    'Update pipeline tracker with final deal details',
+  ],
+}
+
 export const SEED_DEALS = [
   { company_name: 'Gaming Intelligence', stage: 'Investor Targeting', raise_amount: 2000000,   sector: 'Gaming',               deal_owner: 'Me', notes: '' },
   { company_name: 'Play',                stage: 'Investor Targeting', raise_amount: 55000000,  sector: 'Gaming',               deal_owner: 'Me', notes: '' },

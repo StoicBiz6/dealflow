@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import * as XLSX from 'xlsx'
 import { STAGES, STAGE_COLORS } from '../lib/constants'
 import { formatCurrency, formatDate } from '../lib/utils'
 
@@ -31,10 +32,34 @@ export default function ListView({ deals, onEdit, onDelete }) {
     return <span style={{ color: '#7c6af7' }}>{sort.dir === 'asc' ? '↑' : '↓'}</span>
   }
 
+  const exportExcel = () => {
+    const rows = filtered.map(d => ({
+      Company: d.company_name,
+      Stage: d.stage,
+      'Raise ($)': d.raise_amount || '',
+      'Valuation ($)': d.valuation || '',
+      Sector: d.sector || '',
+      'Fee %': d.fee_pct || '',
+      'Est. Fee ($)': d.raise_amount && d.fee_pct ? Math.round(d.raise_amount * d.fee_pct / 100) : '',
+      Owner: d.deal_owner || '',
+      Added: d.created_at?.slice(0, 10) || '',
+      Notes: d.notes || '',
+    }))
+    const ws = XLSX.utils.json_to_sheet(rows)
+    // Set column widths
+    ws['!cols'] = [
+      { wch: 24 }, { wch: 18 }, { wch: 14 }, { wch: 14 },
+      { wch: 16 }, { wch: 8 }, { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 40 },
+    ]
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Pipeline')
+    XLSX.writeFile(wb, `dealflow-pipeline-${new Date().toISOString().slice(0, 10)}.xlsx`)
+  }
+
   return (
     <div style={{ padding: '20px 24px' }}>
       {/* Filters */}
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', alignItems: 'center' }}>
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
@@ -57,9 +82,31 @@ export default function ListView({ deals, onEdit, onDelete }) {
           <option value="">All stages</option>
           {STAGES.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
-        <span style={{ color: '#555', fontSize: '11px', alignSelf: 'center', marginLeft: 'auto' }}>
+        <span style={{ color: '#555', fontSize: '11px', marginLeft: 'auto' }}>
           {filtered.length} deal{filtered.length !== 1 ? 's' : ''}
         </span>
+        <button
+          onClick={exportExcel}
+          disabled={filtered.length === 0}
+          title="Export current view to Excel"
+          style={{
+            background: 'transparent',
+            border: '1px solid #2a2a2a',
+            borderRadius: '6px',
+            color: filtered.length === 0 ? '#333' : '#888',
+            cursor: filtered.length === 0 ? 'default' : 'pointer',
+            fontFamily: 'DM Mono, monospace',
+            fontSize: '12px',
+            padding: '6px 14px',
+            letterSpacing: '0.03em',
+            whiteSpace: 'nowrap',
+            transition: 'border-color 0.15s, color 0.15s',
+          }}
+          onMouseEnter={e => { if (filtered.length > 0) { e.currentTarget.style.borderColor = '#444'; e.currentTarget.style.color = '#f0f0f0' }}}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = '#2a2a2a'; e.currentTarget.style.color = filtered.length === 0 ? '#333' : '#888' }}
+        >
+          ↓ Export Excel
+        </button>
       </div>
 
       {/* Table */}

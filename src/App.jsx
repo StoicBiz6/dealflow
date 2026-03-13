@@ -11,6 +11,7 @@ import ListView from './views/ListView'
 import TasksView from './views/TasksView'
 import NewsView from './views/NewsView'
 import DealPage from './views/DealPage'
+import DealRoomView from './views/DealRoomView'
 import { useDeals } from './hooks/useDeals'
 import { useWorkspace } from './hooks/useWorkspace'
 import DealChat from './components/DealChat'
@@ -129,6 +130,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<MainView />} />
           <Route path="/deal/:id" element={<DealPage />} />
+          <Route path="/deal-room/:id" element={<DealRoomView />} />
         </Routes>
       </SignedIn>
     </>
