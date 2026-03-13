@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { STAGES, STAGE_COLORS, SECTORS } from '../lib/constants'
 import { formatCurrency, formatDate } from '../lib/utils'
 import DealModal from '../components/DealModal'
+import * as XLSX from 'xlsx'
 
 // ─── Shared styles ──────────────────────────────────────────────────────────
 const card = { background: '#111', border: '1px solid #1f1f1f', borderRadius: '10px', padding: '20px', marginBottom: '12px' }
@@ -477,6 +478,26 @@ export default function DealPage() {
     const next = buyerUniverse.map(b => b.name === updated.name ? updated : b)
     setBuyerUniverse(next)
     save({ buyer_universe: next })
+  }
+
+  const downloadBuyerUniverse = () => {
+    const rows = buyerUniverse.map(b => ({
+      'Firm': b.name || '',
+      'Type': b.type || '',
+      'Investment Thesis': b.thesis || '',
+      'Website': b.website || '',
+      'Contact Name': b.contact_name || '',
+      'Contact Title': b.contact_title || '',
+      'Email': b.email || '',
+      'Phone': b.phone || '',
+      'Notes': b.notes || '',
+    }))
+    const ws = XLSX.utils.json_to_sheet(rows)
+    // Column widths
+    ws['!cols'] = [30, 14, 50, 28, 22, 22, 28, 16, 30].map(w => ({ wch: w }))
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Buyer Universe')
+    XLSX.writeFile(wb, `${deal.company_name} - Buyer Universe.xlsx`)
   }
 
   const addBuyerUniverseToContacts = (buyer) => {
@@ -1003,6 +1024,15 @@ export default function DealPage() {
                     >
                       {buyerLoading ? 'Searching…' : buyerUniverse.length ? '↺ Refresh' : '✦ Find Buyers'}
                     </button>
+                    {buyerUniverse.length > 0 && (
+                      <button
+                        onClick={e => { e.stopPropagation(); downloadBuyerUniverse() }}
+                        title="Download as Excel"
+                        style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#888', borderRadius: '6px', padding: '6px 10px', cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
+                      >
+                        ↓ Excel
+                      </button>
+                    )}
                   </>
                 )}
                 <span style={{ color: '#333', fontSize: '12px', userSelect: 'none' }}>{buyerUniverseCollapsed ? '▸' : '▾'}</span>
