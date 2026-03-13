@@ -784,12 +784,12 @@ export default function DealPage() {
   const syncToCalendar = async () => {
     if (!hasGoogleAuth) {
       // Redirect to Google OAuth
-      window.location.href = `/api/google-auth?userId=${user?.id}&returnTo=/deal/${id}`
+      window.location.href = `/api/google-calendar?userId=${user?.id}&returnTo=/deal/${id}`
       return
     }
     setCalSyncing(true)
     try {
-      const res = await fetch('/api/google-calendar-sync', {
+      const res = await fetch('/api/google-calendar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ deal: { ...deal, memo }, userId: user?.id }),
