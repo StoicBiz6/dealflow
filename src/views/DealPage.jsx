@@ -127,6 +127,13 @@ function BuyerRow({ buyer, onToggle, onRemove, onUpdate }) {
         {hasContact && !expanded && (
           <span style={{ color: '#7c6af7', fontSize: '12px', cursor: 'pointer', flexShrink: 0 }} onClick={() => setExpanded(true)} title="Has contact info">✉</span>
         )}
+        <button
+          onClick={() => onUpdate({ ...buyer, emailed: !buyer.emailed })}
+          title={buyer.emailed ? 'Mark as not emailed' : 'Mark as emailed'}
+          style={{ background: buyer.emailed ? 'rgba(74,222,128,0.08)' : 'transparent', border: `1px solid ${buyer.emailed ? '#166534' : '#2a2a2a'}`, borderRadius: '4px', color: buyer.emailed ? '#4ade80' : '#333', fontSize: '11px', padding: '2px 7px', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0, transition: 'all 0.15s' }}
+        >
+          {buyer.emailed ? '✓ Emailed' : '✉'}
+        </button>
         <button onClick={onToggle} style={{ background: buyer.status === 'Active' ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)', color: buyer.status === 'Active' ? '#4ade80' : '#f87171', border: `1px solid ${buyer.status === 'Active' ? '#166534' : '#991b1b'}`, borderRadius: '4px', fontSize: '10px', padding: '2px 8px', cursor: 'pointer', fontFamily: 'inherit' }}>
           {buyer.status}
         </button>
