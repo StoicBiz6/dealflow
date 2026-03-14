@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useUser } from '@clerk/clerk-react'
 import { supabase } from '../lib/supabase'
@@ -18,6 +18,21 @@ export default function DealRoomView() {
   const [loading, setLoading] = useState(true)
   const [authorized, setAuthorized] = useState(false)
   const [authChecked, setAuthChecked] = useState(false)
+  const [viewingDoc, setViewingDoc] = useState(null) // { name, viewUrl }
+
+  // Block keyboard download shortcuts inside the doc viewer
+  const handleKeyDown = useCallback((e) => {
+    if (!viewingDoc) return
+    if ((e.ctrlKey || e.metaKey) && ['s', 'p', 'a'].includes(e.key.toLowerCase())) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+  }, [viewingDoc])
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown, true)
+    return () => document.removeEventListener('keydown', handleKeyDown, true)
+  }, [handleKeyDown])
 
   useEffect(() => {
     if (!isLoaded) return
@@ -197,25 +212,27 @@ export default function DealRoomView() {
               </div>
             )}
 
-            {/* Documents */}
+            {/* Documents — view-only, watermarked */}
             {documents.length > 0 && (
               <div style={card}>
                 <span style={sectionLabel}>Documents</span>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {documents.map((doc, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderBottom: i < documents.length - 1 ? '1px solid #1a1a1a' : 'none' }}>
-                      <span style={{ fontSize: '16px' }}>{doc.type?.includes('pdf') ? '📄' : doc.type?.includes('image') ? '🖼️' : '📎'}</span>
-                      <span style={{ flex: 1, color: '#ccc', fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</span>
-                      <a
-                        href={doc.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ color: '#9d8fff', fontSize: '11px', textDecoration: 'none', flexShrink: 0 }}
-                      >
-                        View ↗
-                      </a>
-                    </div>
-                  ))}
+                  {documents.map((doc, i) => {
+                    const userEmail = user?.emailAddresses?.[0]?.emailAddress || ''
+                    const viewUrl = `/api/view-doc?url=${encodeURIComponent(doc.url)}&email=${encodeURIComponent(userEmail)}`
+                    return (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderBottom: i < documents.length - 1 ? '1px solid #1a1a1a' : 'none' }}>
+                        <span style={{ fontSize: '16px' }}>{doc.type?.includes('pdf') ? '📄' : doc.type?.includes('image') ? '🖼️' : '📎'}</span>
+                        <span style={{ flex: 1, color: '#ccc', fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</span>
+                        <button
+                          onClick={() => setViewingDoc({ name: doc.name, viewUrl })}
+                          style={{ background: 'rgba(124,106,247,0.1)', border: '1px solid #4a3fa0', color: '#9d8fff', fontSize: '11px', padding: '4px 12px', borderRadius: '5px', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}
+                        >
+                          View
+                        </button>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             )}
@@ -290,6 +307,36 @@ export default function DealRoomView() {
           </div>
         </div>
       </div>
+
+      {/* ── Protected Document Viewer Modal ── */}
+      {viewingDoc && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 9000, background: '#000', display: 'flex', flexDirection: 'column' }}
+          onContextMenu={e => e.preventDefault()}
+        >
+          {/* Viewer toolbar */}
+          <div style={{ height: '44px', background: '#0d0d0d', borderBottom: '1px solid #1f1f1f', display: 'flex', alignItems: 'center', padding: '0 16px', gap: '12px', flexShrink: 0 }}>
+            <span style={{ color: '#ccc', fontSize: '12px', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{viewingDoc.name}</span>
+            <span style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '5px', padding: '3px 10px', color: '#555', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>
+              🔒 View only · {user?.emailAddresses?.[0]?.emailAddress}
+            </span>
+            <button
+              onClick={() => setViewingDoc(null)}
+              style={{ background: 'none', border: '1px solid #2a2a2a', color: '#666', cursor: 'pointer', fontSize: '14px', padding: '4px 10px', borderRadius: '5px', fontFamily: 'inherit', flexShrink: 0 }}
+            >
+              ✕ Close
+            </button>
+          </div>
+
+          {/* iframe — email watermark is baked into the PDF server-side */}
+          <iframe
+            src={viewingDoc.viewUrl}
+            title={viewingDoc.name}
+            style={{ flex: 1, width: '100%', border: 'none' }}
+            sandbox="allow-same-origin allow-scripts"
+          />
+        </div>
+      )}
     </div>
   )
 }
