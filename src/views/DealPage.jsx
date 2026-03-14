@@ -759,17 +759,23 @@ export default function DealPage() {
     save({ comments: next })
   }
 
-  // Deal Room Share
+  // Deal Room Share — direct Supabase call (bypasses generic save to avoid state interactions)
   const saveShareList = async (emails) => {
     setShareSaving(true)
-    console.log('[DealRoom] saving shared_with:', emails, 'for deal id:', id)
-    const { data, error } = await save({ shared_with: emails })
-    console.log('[DealRoom] save result:', { data: !!data, error })
-    if (!error) {
-      setSharedWith(emails)
-    } else {
-      console.error('[DealRoom] share save failed:', error)
-      alert(`Failed to save share list:\n${error.message}\n(code: ${error.code})`)
+    try {
+      const { error } = await supabase
+        .from('deals')
+        .update({ shared_with: emails })
+        .eq('id', id)
+      if (error) {
+        console.error('[DealRoom] share save failed:', error)
+        alert(`Failed to save share list: ${error.message}`)
+      } else {
+        setSharedWith(emails)
+      }
+    } catch (err) {
+      console.error('[DealRoom] share save exception:', err)
+      alert(`Error saving share list: ${err.message}`)
     }
     setShareSaving(false)
   }
