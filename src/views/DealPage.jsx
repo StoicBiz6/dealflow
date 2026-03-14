@@ -281,9 +281,11 @@ export default function DealPage() {
 
   const save = useCallback(async (updates) => {
     setSaving(true)
-    const { data } = await supabase.from('deals').update(updates).eq('id', id).select().single()
+    const { data, error } = await supabase.from('deals').update(updates).eq('id', id).select().single()
+    if (error) console.error('Save error:', error)
     if (data) setDeal(data)
     setSaving(false)
+    return { data, error }
   }, [id])
 
   // Memo auto-save
@@ -760,8 +762,13 @@ export default function DealPage() {
   // Deal Room Share
   const saveShareList = async (emails) => {
     setShareSaving(true)
-    await save({ shared_with: emails })
-    setSharedWith(emails)
+    const { error } = await save({ shared_with: emails })
+    if (!error) {
+      setSharedWith(emails)
+    } else {
+      console.error('Share save failed:', error)
+      alert(`Failed to save share list: ${error.message}`)
+    }
     setShareSaving(false)
   }
   const addShareEmail = () => {
