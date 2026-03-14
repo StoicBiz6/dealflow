@@ -22,7 +22,7 @@ export default async function handler(req, res) {
       from: FROM_EMAIL,
       to: [to],
       subject,
-      text: body,
+      ...(req.body.html ? { html: req.body.html } : { text: body }),
     })
 
     if (error) {

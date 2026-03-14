@@ -760,8 +760,10 @@ export default function DealPage() {
   }
 
   // Deal Room Share — direct Supabase call (bypasses generic save to avoid state interactions)
+  // Returns true on success so callers can fire follow-up actions (e.g. invite email)
   const saveShareList = async (emails) => {
     setShareSaving(true)
+    let success = false
     try {
       const { error } = await supabase
         .from('deals')
@@ -772,19 +774,44 @@ export default function DealPage() {
         alert(`Failed to save share list: ${error.message}`)
       } else {
         setSharedWith(emails)
+        success = true
       }
     } catch (err) {
       console.error('[DealRoom] share save exception:', err)
       alert(`Error saving share list: ${err.message}`)
     }
     setShareSaving(false)
+    return success
   }
-  const addShareEmail = () => {
+  const addShareEmail = async () => {
     const email = shareEmailInput.trim().toLowerCase()
     if (!email || sharedWith.includes(email)) { setShareEmailInput(''); return }
     const next = [...sharedWith, email]
     setShareEmailInput('')
-    saveShareList(next)
+    const saved = await saveShareList(next)
+    if (saved) {
+      // Send invite email to the newly added recipient
+      const dealRoomUrl = `${window.location.origin}/deal-room/${id}`
+      const companyName = deal?.company_name || 'a deal'
+      fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: email,
+          subject: `You've been granted access to the ${companyName} Deal Room`,
+          body: `You have been granted access to the ${companyName} deal room.\n\nView it here: ${dealRoomUrl}\n\nYou'll need to sign in with this email address (${email}) to access the deal.`,
+          html: `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;background:#0d0d0d;color:#e5e5e5;border-radius:12px">
+  <div style="font-size:22px;font-weight:700;margin-bottom:6px;color:#f0f0f0">${companyName}</div>
+  <div style="font-size:13px;color:#666;margin-bottom:28px;text-transform:uppercase;letter-spacing:0.06em">Deal Room Access</div>
+  <p style="font-size:14px;color:#aaa;line-height:1.6;margin-bottom:28px">You've been granted access to the <strong style="color:#e5e5e5">${companyName}</strong> deal room. Click the button below to view the confidential deal summary.</p>
+  <a href="${dealRoomUrl}" style="display:inline-block;background:#7c6af7;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:14px;margin-bottom:28px">View Deal Room →</a>
+  <p style="font-size:12px;color:#444;line-height:1.5;margin:0">Sign in with <strong style="color:#666">${email}</strong> to access this deal room. If you don't have an account, you'll be prompted to create one.</p>
+  <hr style="border:none;border-top:1px solid #1f1f1f;margin:24px 0">
+  <p style="font-size:11px;color:#333;margin:0">Sent via DealFlow by Stoic Partner</p>
+</div>`,
+        }),
+      }).catch(err => console.error('Invite email failed:', err))
+    }
   }
   const removeShareEmail = (email) => {
     saveShareList(sharedWith.filter(e => e !== email))
