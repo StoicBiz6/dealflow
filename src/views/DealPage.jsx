@@ -243,6 +243,7 @@ export default function DealPage() {
   const [shareEmailInput, setShareEmailInput] = useState('')
   const [sharedWith, setSharedWith] = useState([])
   const [shareSaving, setShareSaving] = useState(false)
+  const [shareInviteStatus, setShareInviteStatus] = useState(null) // null | 'sending' | 'sent' | { error: string }
   // Google Calendar
   const [calSyncing, setCalSyncing] = useState(false)
   const [calEventUrl, setCalEventUrl] = useState(null)
@@ -791,16 +792,18 @@ export default function DealPage() {
     const saved = await saveShareList(next)
     if (saved) {
       // Send invite email to the newly added recipient
+      setShareInviteStatus('sending')
       const dealRoomUrl = `${window.location.origin}/deal-room/${id}`
       const companyName = deal?.company_name || 'a deal'
-      fetch('/api/send-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: email,
-          subject: `You've been granted access to the ${companyName} Deal Room`,
-          body: `You have been granted access to the ${companyName} deal room.\n\nView it here: ${dealRoomUrl}\n\nYou'll need to sign in with this email address (${email}) to access the deal.`,
-          html: `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;background:#0d0d0d;color:#e5e5e5;border-radius:12px">
+      try {
+        const res = await fetch('/api/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: email,
+            subject: `You've been granted access to the ${companyName} Deal Room`,
+            body: `You have been granted access to the ${companyName} deal room.\n\nView it here: ${dealRoomUrl}\n\nYou'll need to sign in with this email address (${email}) to access the deal.`,
+            html: `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;background:#0d0d0d;color:#e5e5e5;border-radius:12px">
   <div style="font-size:22px;font-weight:700;margin-bottom:6px;color:#f0f0f0">${companyName}</div>
   <div style="font-size:13px;color:#666;margin-bottom:28px;text-transform:uppercase;letter-spacing:0.06em">Deal Room Access</div>
   <p style="font-size:14px;color:#aaa;line-height:1.6;margin-bottom:28px">You've been granted access to the <strong style="color:#e5e5e5">${companyName}</strong> deal room. Click the button below to view the confidential deal summary.</p>
@@ -809,8 +812,18 @@ export default function DealPage() {
   <hr style="border:none;border-top:1px solid #1f1f1f;margin:24px 0">
   <p style="font-size:11px;color:#333;margin:0">Sent via DealFlow by Stoic Partner</p>
 </div>`,
-        }),
-      }).catch(err => console.error('Invite email failed:', err))
+          }),
+        })
+        const json = await res.json().catch(() => ({}))
+        if (res.ok) {
+          setShareInviteStatus('sent')
+          setTimeout(() => setShareInviteStatus(null), 4000)
+        } else {
+          setShareInviteStatus({ error: json.error || `Send failed (${res.status})` })
+        }
+      } catch (err) {
+        setShareInviteStatus({ error: err.message })
+      }
     }
   }
   const removeShareEmail = (email) => {
@@ -1742,6 +1755,23 @@ export default function DealPage() {
                 Copy Link
               </button>
             </div>
+
+            {/* Invite email status */}
+            {shareInviteStatus === 'sending' && (
+              <div style={{ background: 'rgba(124,106,247,0.08)', border: '1px solid #4a3fa0', borderRadius: '6px', padding: '8px 12px', marginBottom: '10px', color: '#9d8fff', fontSize: '11px' }}>
+                ✉ Sending invite email…
+              </div>
+            )}
+            {shareInviteStatus === 'sent' && (
+              <div style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '6px', padding: '8px 12px', marginBottom: '10px', color: '#34d399', fontSize: '11px' }}>
+                ✓ Invite email sent
+              </div>
+            )}
+            {shareInviteStatus?.error && (
+              <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', padding: '8px 12px', marginBottom: '10px', color: '#f87171', fontSize: '11px' }}>
+                ✕ Email not sent: {shareInviteStatus.error}
+              </div>
+            )}
 
             <div style={{ color: '#333', fontSize: '11px', lineHeight: 1.6 }}>
               Recipients must sign in with the email address you listed above. They'll see a read-only view of the company overview, stage, financials, and investment memo.
