@@ -762,12 +762,14 @@ export default function DealPage() {
   // Deal Room Share
   const saveShareList = async (emails) => {
     setShareSaving(true)
-    const { error } = await save({ shared_with: emails })
+    console.log('[DealRoom] saving shared_with:', emails, 'for deal id:', id)
+    const { data, error } = await save({ shared_with: emails })
+    console.log('[DealRoom] save result:', { data: !!data, error })
     if (!error) {
       setSharedWith(emails)
     } else {
-      console.error('Share save failed:', error)
-      alert(`Failed to save share list: ${error.message}`)
+      console.error('[DealRoom] share save failed:', error)
+      alert(`Failed to save share list:\n${error.message}\n(code: ${error.code})`)
     }
     setShareSaving(false)
   }
