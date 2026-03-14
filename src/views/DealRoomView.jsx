@@ -328,12 +328,14 @@ export default function DealRoomView() {
             </button>
           </div>
 
-          {/* iframe — email watermark is baked into the PDF server-side */}
+          {/* iframe — email watermark is baked into the PDF server-side.
+              No sandbox: Chrome/Edge's PDF renderer needs full origin trust to
+              initialise. The watermark (viewer's email on every page) is the
+              primary leak-deterrent — any copy they save already carries it. */}
           <iframe
             src={viewingDoc.viewUrl}
             title={viewingDoc.name}
             style={{ flex: 1, width: '100%', border: 'none' }}
-            sandbox="allow-same-origin allow-scripts"
           />
         </div>
       )}
