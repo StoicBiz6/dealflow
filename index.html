@@ -20,6 +20,12 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Redirect GitHub Pages visitors to the live Vercel app
+      if (window.location.hostname.endsWith('github.io')) {
+        window.location.replace('https://dealflow-zeta.vercel.app' + window.location.pathname.replace(/^\/dealflow/, '') + window.location.search + window.location.hash);
+      }
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
