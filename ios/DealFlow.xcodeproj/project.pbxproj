@@ -1,0 +1,497 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		DF000011 /* DealFlowApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF000010; };
+		DF000013 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF000012; };
+		DF000015 /* Deal.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF000014; };
+		DF000017 /* DealTask.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF000016; };
+		DF000019 /* Workspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF000018; };
+		DF00001B /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF00001A; };
+		DF00001D /* SupabaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF00001C; };
+		DF00001F /* AIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF00001E; };
+		DF000021 /* AppViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF000020; };
+		DF000023 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF000022; };
+		DF000025 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF000024; };
+		DF000027 /* PipelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF000026; };
+		DF000029 /* DealCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF000028; };
+		DF00002B /* DealListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF00002A; };
+		DF00002D /* DealDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF00002C; };
+		DF00002F /* AddDealView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF00002E; };
+		DF000031 /* TasksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF000030; };
+		DF000033 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF000032; };
+		DF000035 /* NewsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF000034; };
+		DF000037 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF000036; };
+		DF000039 /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF000038; };
+		DF00003B /* KeychainManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF00003A; };
+		DF000044 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DF000043; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		DF00000E /* DealFlow.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DealFlow.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		DF000010 /* DealFlowApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DealFlowApp.swift; sourceTree = "<group>"; };
+		DF000012 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		DF000014 /* Deal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Deal.swift; sourceTree = "<group>"; };
+		DF000016 /* DealTask.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DealTask.swift; sourceTree = "<group>"; };
+		DF000018 /* Workspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Workspace.swift; sourceTree = "<group>"; };
+		DF00001A /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
+		DF00001C /* SupabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseService.swift; sourceTree = "<group>"; };
+		DF00001E /* AIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIService.swift; sourceTree = "<group>"; };
+		DF000020 /* AppViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppViewModel.swift; sourceTree = "<group>"; };
+		DF000022 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
+		DF000024 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		DF000026 /* PipelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PipelineView.swift; sourceTree = "<group>"; };
+		DF000028 /* DealCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DealCardView.swift; sourceTree = "<group>"; };
+		DF00002A /* DealListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DealListView.swift; sourceTree = "<group>"; };
+		DF00002C /* DealDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DealDetailView.swift; sourceTree = "<group>"; };
+		DF00002E /* AddDealView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddDealView.swift; sourceTree = "<group>"; };
+		DF000030 /* TasksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TasksView.swift; sourceTree = "<group>"; };
+		DF000032 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		DF000034 /* NewsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewsView.swift; sourceTree = "<group>"; };
+		DF000036 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
+		DF000038 /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
+		DF00003A /* KeychainManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainManager.swift; sourceTree = "<group>"; };
+		DF000040 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		DF000043 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		DF00000D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		DF000002 /* DealFlow */ = {
+			isa = PBXGroup;
+			children = (
+				DF000050 /* DealFlow */,
+				DF000003 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		DF000003 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				DF00000E /* DealFlow.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		DF000050 /* DealFlow */ = {
+			isa = PBXGroup;
+			children = (
+				DF000010 /* DealFlowApp.swift */,
+				DF000012 /* MainTabView.swift */,
+				DF000051 /* Models */,
+				DF000052 /* Services */,
+				DF000053 /* ViewModels */,
+				DF000054 /* Views */,
+				DF00005B /* Utils */,
+				DF000043 /* Assets.xcassets */,
+				DF000040 /* Info.plist */,
+			);
+			path = DealFlow;
+			sourceTree = "<group>";
+		};
+		DF000051 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				DF000014 /* Deal.swift */,
+				DF000016 /* DealTask.swift */,
+				DF000018 /* Workspace.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		DF000052 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				DF00001A /* AuthService.swift */,
+				DF00001C /* SupabaseService.swift */,
+				DF00001E /* AIService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		DF000053 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				DF000020 /* AppViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		DF000054 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				DF000055 /* Authentication */,
+				DF000056 /* Dashboard */,
+				DF000057 /* Pipeline */,
+				DF000058 /* Deals */,
+				DF000059 /* Tasks */,
+				DF00005A /* Settings */,
+				DF00005C /* News */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		DF000055 /* Authentication */ = {
+			isa = PBXGroup;
+			children = (
+				DF000022 /* SignInView.swift */,
+			);
+			path = Authentication;
+			sourceTree = "<group>";
+		};
+		DF000056 /* Dashboard */ = {
+			isa = PBXGroup;
+			children = (
+				DF000024 /* DashboardView.swift */,
+			);
+			path = Dashboard;
+			sourceTree = "<group>";
+		};
+		DF000057 /* Pipeline */ = {
+			isa = PBXGroup;
+			children = (
+				DF000026 /* PipelineView.swift */,
+				DF000028 /* DealCardView.swift */,
+			);
+			path = Pipeline;
+			sourceTree = "<group>";
+		};
+		DF000058 /* Deals */ = {
+			isa = PBXGroup;
+			children = (
+				DF00002A /* DealListView.swift */,
+				DF00002C /* DealDetailView.swift */,
+				DF00002E /* AddDealView.swift */,
+			);
+			path = Deals;
+			sourceTree = "<group>";
+		};
+		DF000059 /* Tasks */ = {
+			isa = PBXGroup;
+			children = (
+				DF000030 /* TasksView.swift */,
+			);
+			path = Tasks;
+			sourceTree = "<group>";
+		};
+		DF00005A /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				DF000032 /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		DF00005C /* News */ = {
+			isa = PBXGroup;
+			children = (
+				DF000034 /* NewsView.swift */,
+			);
+			path = News;
+			sourceTree = "<group>";
+		};
+		DF00005B /* Utils */ = {
+			isa = PBXGroup;
+			children = (
+				DF000036 /* Constants.swift */,
+				DF000038 /* Extensions.swift */,
+				DF00003A /* KeychainManager.swift */,
+			);
+			path = Utils;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		DF000004 /* DealFlow */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DF000006;
+			buildPhases = (
+				DF00000B /* Sources */,
+				DF00000D /* Frameworks */,
+				DF00000C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DealFlow;
+			productName = DealFlow;
+			productReference = DF00000E /* DealFlow.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		DF000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					DF000004 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = DF000005;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = DF000002;
+			productRefGroup = DF000003 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				DF000004 /* DealFlow */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		DF00000C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DF000044 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		DF00000B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DF000011 /* DealFlowApp.swift in Sources */,
+				DF000013 /* MainTabView.swift in Sources */,
+				DF000015 /* Deal.swift in Sources */,
+				DF000017 /* DealTask.swift in Sources */,
+				DF000019 /* Workspace.swift in Sources */,
+				DF00001B /* AuthService.swift in Sources */,
+				DF00001D /* SupabaseService.swift in Sources */,
+				DF00001F /* AIService.swift in Sources */,
+				DF000021 /* AppViewModel.swift in Sources */,
+				DF000023 /* SignInView.swift in Sources */,
+				DF000025 /* DashboardView.swift in Sources */,
+				DF000027 /* PipelineView.swift in Sources */,
+				DF000029 /* DealCardView.swift in Sources */,
+				DF00002B /* DealListView.swift in Sources */,
+				DF00002D /* DealDetailView.swift in Sources */,
+				DF00002F /* AddDealView.swift in Sources */,
+				DF000031 /* TasksView.swift in Sources */,
+				DF000033 /* SettingsView.swift in Sources */,
+				DF000035 /* NewsView.swift in Sources */,
+				DF000037 /* Constants.swift in Sources */,
+				DF000039 /* Extensions.swift in Sources */,
+				DF00003B /* KeychainManager.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		DF000007 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_CYCLE = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		DF000008 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_CYCLE = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		DF000009 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = DealFlow/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dealflow.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		DF00000A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = DealFlow/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dealflow.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		DF000005 /* Build configuration list for PBXProject "DealFlow" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DF000007 /* Debug */,
+				DF000008 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		DF000006 /* Build configuration list for PBXNativeTarget "DealFlow" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DF000009 /* Debug */,
+				DF00000A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+	};
+	rootObject = DF000001 /* Project object */;
+}
