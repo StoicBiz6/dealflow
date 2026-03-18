@@ -6,7 +6,8 @@
       "mcp__2846036f-98a7-4049-ac56-e56240ee2fbc__apply_migration",
       "mcp__2846036f-98a7-4049-ac56-e56240ee2fbc__execute_sql",
       "Bash(npx vercel --prod)",
-      "Bash(npm install xlsx)"
+      "Bash(npm install xlsx)",
+      "mcp__Vercel__deploy_to_vercel"
     ]
   }
 }
