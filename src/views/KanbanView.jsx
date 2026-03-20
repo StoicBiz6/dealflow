@@ -38,6 +38,7 @@ export default function KanbanView({ deals, onEdit, onDelete, onStageChange }) {
         const stageDeals = byStage[stage]
         const colors = STAGE_COLORS[stage]
         const totalRaise = stageDeals.reduce((sum, d) => sum + (d.raise_amount || 0), 0)
+        const totalFee = stageDeals.reduce((sum, d) => sum + (d.raise_amount && d.fee_pct ? d.raise_amount * d.fee_pct / 100 : 0), 0)
         const isOver = overStage === stage
 
         return (
@@ -80,6 +81,11 @@ export default function KanbanView({ deals, onEdit, onDelete, onStageChange }) {
               {totalRaise > 0 && (
                 <div style={{ color: '#555', fontSize: '10px' }}>
                   {formatCurrency(totalRaise)} total
+                </div>
+              )}
+              {totalFee > 0 && (
+                <div style={{ color: '#6b5fcc', fontSize: '10px' }}>
+                  {formatCurrency(totalFee)} est. fee
                 </div>
               )}
             </div>
