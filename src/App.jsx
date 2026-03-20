@@ -8,6 +8,7 @@ import WorkspaceModal from './components/WorkspaceModal'
 import KanbanView from './views/KanbanView'
 import DashboardView from './views/DashboardView'
 import ListView from './views/ListView'
+import TimelineView from './views/TimelineView'
 import TasksView from './views/TasksView'
 import NewsView from './views/NewsView'
 import DealPage from './views/DealPage'
@@ -90,6 +91,7 @@ function MainView() {
           {view === 'pipeline' && <KanbanView deals={deals} onEdit={openDeal} onDelete={handleDelete} onStageChange={updateStage} />}
           {view === 'dashboard' && <DashboardView deals={deals} onOpenDeal={openDeal} />}
           {view === 'list' && <ListView deals={deals} onEdit={openDeal} onDelete={handleDelete} />}
+          {view === 'timeline' && <TimelineView deals={deals} onOpenDeal={openDeal} />}
           {view === 'tasks' && <TasksView deals={deals} onUpdateDealTasks={handleUpdateDealTasks} onOpenDeal={openDeal} />}
           {view === 'news' && <NewsView deals={deals} />}
         </>

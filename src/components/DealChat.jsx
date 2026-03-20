@@ -181,7 +181,7 @@ export default function DealChat({ onCreateDeal }) {
           />
 
           <div style={{ display: 'flex', gap: 8 }}>
-            <button style={s.btn(true)} onClick={handleSend} disabled={loading} style={{ ...s.btn(true), flex: 1 }}>
+            <button onClick={handleSend} disabled={loading} style={{ ...s.btn(true), flex: 1 }}>
               {loading ? 'Parsing...' : 'Parse Deal →'}
             </button>
 

@@ -32,6 +32,7 @@ export default function Navbar({ view, setView, onAddDeal, onImport, activeWorks
           { id: 'dashboard', label: 'Dashboard' },
           { id: 'pipeline', label: 'Pipeline' },
           { id: 'list', label: 'List' },
+          { id: 'timeline', label: 'Timeline' },
           { id: 'tasks', label: 'Tasks', badge: taskCount || null },
           { id: 'news', label: 'News' },
         ].map(({ id, label, badge }) => (

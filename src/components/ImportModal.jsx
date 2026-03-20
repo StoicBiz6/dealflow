@@ -10,26 +10,65 @@ const fmt = (n) => n >= 1e9 ? `$${(n / 1e9).toFixed(1)}B` : n >= 1e6 ? `$${(n / 
 
 // ── Column auto-mapping for Excel ──────────────────────────────────────────
 const COL_MAP = {
-  company_name: ['company', 'company name', 'name', 'business', 'deal name', 'deal'],
-  stage: ['stage', 'status', 'deal stage', 'pipeline stage'],
-  raise_amount: ['raise', 'raise amount', 'raising', 'deal size', 'amount', 'investment size', 'round size'],
-  valuation: ['valuation', 'val', 'post money', 'pre money', 'post-money', 'pre-money', 'enterprise value'],
-  sector: ['sector', 'industry', 'vertical', 'space'],
-  deal_owner: ['owner', 'deal owner', 'source', 'sourced by', 'contact', 'assigned to'],
-  website: ['website', 'url', 'web', 'domain', 'site'],
-  notes: ['notes', 'description', 'summary', 'memo', 'comments', 'overview'],
+  company_name: [
+    'company', 'company name', 'company_name', 'companyname',
+    'name', 'business', 'business name',
+    'deal', 'deal name', 'deal_name', 'dealname',
+    'target', 'target company', 'target name',
+    'portfolio', 'portfolio company', 'portfolio co',
+    'issuer', 'borrower', 'entity', 'account',
+    'organization', 'org', 'firm',
+  ],
+  stage: ['stage', 'status', 'deal stage', 'pipeline stage', 'deal status', 'phase', 'current stage'],
+  raise_amount: [
+    'raise', 'raise amount', 'raising', 'deal size', 'amount',
+    'investment size', 'round size', 'funding amount', 'capital raise',
+    'transaction size', 'check size', 'investment amount', 'size',
+  ],
+  valuation: [
+    'valuation', 'val', 'post money', 'pre money',
+    'post-money', 'pre-money', 'enterprise value', 'ev',
+    'implied valuation', 'equity value',
+  ],
+  sector: ['sector', 'industry', 'vertical', 'space', 'category', 'market', 'segment'],
+  deal_owner: [
+    'owner', 'deal owner', 'source', 'sourced by', 'contact',
+    'assigned to', 'analyst', 'associate', 'banker', 'coverage',
+    'lead', 'relationship', 'rm',
+  ],
+  website: ['website', 'url', 'web', 'domain', 'site', 'link', 'homepage'],
+  notes: ['notes', 'description', 'summary', 'memo', 'comments', 'overview', 'details', 'narrative'],
+}
+
+function cleanHeader(h) {
+  return h.replace(/^\uFEFF/, '').replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').toLowerCase().trim()
 }
 
 function mapHeaders(headers) {
-  const result = {}
+  // Score-based matching: exact match (100) > full-word substring for aliases ≥5 chars (10)
+  // Short aliases (≤4 chars) only match exactly to avoid false positives
+  const scores = {} // { field: { header, score } }
+
   headers.forEach(h => {
-    const lower = h.toLowerCase().trim()
+    const lower = cleanHeader(h)
     for (const [field, aliases] of Object.entries(COL_MAP)) {
-      if (!result[field] && aliases.some(a => lower.includes(a) || a.includes(lower))) {
-        result[field] = h
+      let best = 0
+      for (const a of aliases) {
+        if (lower === a) { best = Math.max(best, 100); break }
+        if (a.length >= 5 && (lower.includes(a) || a.includes(lower))) best = Math.max(best, 10)
+      }
+      if (best > 0 && (!scores[field] || best > scores[field].score)) {
+        scores[field] = { header: h, score: best }
       }
     }
   })
+
+  const result = {}
+  for (const [field, { header }] of Object.entries(scores)) result[field] = header
+
+  // Fallback: use first column for company_name
+  if (!result.company_name && headers.length > 0) result.company_name = headers[0]
+
   return result
 }
 
@@ -71,6 +110,7 @@ const dropZone = (drag) => ({ border: `2px dashed ${drag ? '#7c6af7' : '#2a2a2a'
 
 // ── DealPreview ─────────────────────────────────────────────────────────────
 function DealPreview({ deal }) {
+  const metricEntries = deal.metrics ? Object.entries(deal.metrics).filter(([, v]) => v) : []
   return (
     <div style={previewCard}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
@@ -80,7 +120,37 @@ function DealPreview({ deal }) {
       {deal.raise_amount && <div style={row}><span style={{ color: '#555' }}>Raise</span><span style={{ color: '#e5e5e5' }}>{fmt(deal.raise_amount)}</span></div>}
       {deal.valuation && <div style={row}><span style={{ color: '#555' }}>Valuation</span><span style={{ color: '#e5e5e5' }}>{fmt(deal.valuation)}</span></div>}
       {deal.sector && <div style={row}><span style={{ color: '#555' }}>Sector</span><span style={{ color: '#e5e5e5' }}>{deal.sector}</span></div>}
-      {deal.notes && <div style={{ color: '#666', marginTop: 8, lineHeight: 1.5 }}>{deal.notes}</div>}
+      {deal.deal_owner && <div style={row}><span style={{ color: '#555' }}>Advisor</span><span style={{ color: '#e5e5e5' }}>{deal.deal_owner}</span></div>}
+
+      {/* Metrics */}
+      {metricEntries.length > 0 && (
+        <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #222' }}>
+          <div style={{ color: '#444', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Financials</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 18px' }}>
+            {metricEntries.map(([k, v]) => (
+              <div key={k} style={{ fontSize: 11 }}>
+                <span style={{ color: '#555' }}>{k.replace(/_/g, ' ')}: </span>
+                <span style={{ color: '#ccc' }}>{v}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Contacts */}
+      {deal.contacts?.length > 0 && (
+        <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #222' }}>
+          <div style={{ color: '#444', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Management</div>
+          {deal.contacts.map((c, i) => (
+            <div key={i} style={{ fontSize: 11, color: '#888', marginBottom: 3 }}>
+              <span style={{ color: '#ccc' }}>{c.name}</span>
+              {c.firm && <span style={{ color: '#555' }}> · {c.firm}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {deal.notes && <div style={{ color: '#666', marginTop: 10, paddingTop: 10, borderTop: '1px solid #222', lineHeight: 1.5, fontSize: 12 }}>{deal.notes}</div>}
     </div>
   )
 }
@@ -190,16 +260,44 @@ function CIMTab({ onDealReady }) {
 }
 
 // ── Excel Tab ────────────────────────────────────────────────────────────────
+const FIELD_LABELS = {
+  company_name: 'Company Name *',
+  stage: 'Stage',
+  raise_amount: 'Raise Amount',
+  valuation: 'Valuation',
+  sector: 'Sector',
+  deal_owner: 'Deal Owner',
+  website: 'Website',
+  notes: 'Notes',
+}
+
+function buildDeals(raw, mapping) {
+  return raw
+    .filter(r => r[mapping.company_name]?.toString().trim())
+    .map(r => ({
+      company_name: r[mapping.company_name]?.toString().trim(),
+      stage: mapping.stage ? parseStage(r[mapping.stage]) : 'Sourced',
+      raise_amount: mapping.raise_amount ? parseMoney(r[mapping.raise_amount]) : null,
+      valuation: mapping.valuation ? parseMoney(r[mapping.valuation]) : null,
+      sector: mapping.sector ? parseSector(r[mapping.sector]) : null,
+      deal_owner: mapping.deal_owner ? r[mapping.deal_owner]?.toString().trim() || null : null,
+      website: mapping.website ? r[mapping.website]?.toString().trim() || null : null,
+      notes: mapping.notes ? r[mapping.notes]?.toString().trim() || null : null,
+    }))
+}
+
 function ExcelTab({ onDealsReady }) {
   const [dragging, setDragging] = useState(false)
-  const [rows, setRows] = useState(null)
+  const [rawData, setRawData] = useState(null)   // raw rows from xlsx
+  const [headers, setHeaders] = useState([])
+  const [mapping, setMapping] = useState({})      // field → header column name
+  const [deals, setDeals] = useState(null)        // built deals after confirming mapping
   const [error, setError] = useState('')
   const fileRef = useRef(null)
 
   const parseFile = (f) => {
-    const validTypes = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel', 'text/csv', '']
     if (!f) return
-    setError('')
+    setError(''); setRawData(null); setDeals(null); setMapping({})
     const reader = new FileReader()
     reader.onload = (e) => {
       try {
@@ -207,26 +305,11 @@ function ExcelTab({ onDealsReady }) {
         const sheet = wb.Sheets[wb.SheetNames[0]]
         const raw = XLSX.utils.sheet_to_json(sheet, { defval: '' })
         if (!raw.length) { setError('No data found in spreadsheet.'); return }
-
-        const headers = Object.keys(raw[0])
-        const mapping = mapHeaders(headers)
-
-        if (!mapping.company_name) { setError('Could not find a "Company Name" column. Please include a column named Company, Name, or similar.'); return }
-
-        const deals = raw
-          .filter(r => r[mapping.company_name]?.toString().trim())
-          .map(r => ({
-            company_name: r[mapping.company_name]?.toString().trim(),
-            stage: mapping.stage ? parseStage(r[mapping.stage]) : 'Sourced',
-            raise_amount: mapping.raise_amount ? parseMoney(r[mapping.raise_amount]) : null,
-            valuation: mapping.valuation ? parseMoney(r[mapping.valuation]) : null,
-            sector: mapping.sector ? parseSector(r[mapping.sector]) : null,
-            deal_owner: mapping.deal_owner ? r[mapping.deal_owner]?.toString().trim() || null : null,
-            website: mapping.website ? r[mapping.website]?.toString().trim() || null : null,
-            notes: mapping.notes ? r[mapping.notes]?.toString().trim() || null : null,
-          }))
-
-        setRows(deals)
+        const hdrs = Object.keys(raw[0])
+        const autoMap = mapHeaders(hdrs)
+        setHeaders(hdrs)
+        setRawData(raw)
+        setMapping(autoMap)
       } catch (err) {
         setError('Could not parse file: ' + err.message)
       }
@@ -234,33 +317,72 @@ function ExcelTab({ onDealsReady }) {
     reader.readAsBinaryString(f)
   }
 
-  const handleDrop = (e) => {
-    e.preventDefault(); setDragging(false)
-    parseFile(e.dataTransfer.files[0])
+  const handleDrop = (e) => { e.preventDefault(); setDragging(false); parseFile(e.dataTransfer.files[0]) }
+
+  const confirmMapping = () => {
+    if (!mapping.company_name) { setError('Please map the Company Name column.'); return }
+    setDeals(buildDeals(rawData, mapping))
   }
+
+  const selStyle = { ...inp, width: 'auto', flex: 1, cursor: 'pointer' }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      <div
-        style={dropZone(dragging)}
-        onDragOver={e => { e.preventDefault(); setDragging(true) }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={handleDrop}
-        onClick={() => fileRef.current?.click()}
-      >
-        <div style={{ fontSize: 28, marginBottom: 8 }}>📊</div>
-        <div style={{ color: '#888', fontSize: 13 }}>Drop your Excel or CSV here, or click to browse</div>
-        <div style={{ color: '#444', fontSize: 11, marginTop: 4 }}>.xlsx · .xls · .csv</div>
-        <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" style={{ display: 'none' }} onChange={e => parseFile(e.target.files[0])} />
-      </div>
+
+      {/* Drop zone — only shown before file loaded */}
+      {!rawData && (
+        <div
+          style={dropZone(dragging)}
+          onDragOver={e => { e.preventDefault(); setDragging(true) }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={handleDrop}
+          onClick={() => fileRef.current?.click()}
+        >
+          <div style={{ fontSize: 28, marginBottom: 8 }}>📊</div>
+          <div style={{ color: '#888', fontSize: 13 }}>Drop your Excel or CSV here, or click to browse</div>
+          <div style={{ color: '#444', fontSize: 11, marginTop: 4 }}>.xlsx · .xls · .csv</div>
+          <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" style={{ display: 'none' }} onChange={e => parseFile(e.target.files[0])} />
+        </div>
+      )}
 
       {error && <div style={{ color: '#f87171', fontSize: 12 }}>{error}</div>}
 
-      {rows && (
+      {/* Column mapper */}
+      {rawData && !deals && (
         <>
-          <div style={{ color: '#888', fontSize: 12 }}>{rows.length} deal{rows.length !== 1 ? 's' : ''} found</div>
-          <div style={{ maxHeight: 240, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {rows.map((d, i) => (
+          <div style={{ color: '#888', fontSize: 12 }}>
+            {rawData.length} rows detected — map your columns:
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {Object.keys(FIELD_LABELS).map(field => (
+              <div key={field} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ color: field === 'company_name' ? '#c4b5fd' : '#666', fontSize: 11, width: 120, flexShrink: 0, fontFamily: 'DM Mono, monospace' }}>
+                  {FIELD_LABELS[field]}
+                </span>
+                <select
+                  value={mapping[field] || ''}
+                  onChange={e => setMapping(m => ({ ...m, [field]: e.target.value || undefined }))}
+                  style={selStyle}
+                >
+                  <option value="">— skip —</option>
+                  {headers.map(h => <option key={h} value={h}>{h}</option>)}
+                </select>
+              </div>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button style={btn('primary')} onClick={confirmMapping}>Preview Import →</button>
+            <button style={btn()} onClick={() => { setRawData(null); setDeals(null) }}>Change File</button>
+          </div>
+        </>
+      )}
+
+      {/* Deal preview after mapping confirmed */}
+      {deals && (
+        <>
+          <div style={{ color: '#4ade80', fontSize: 12 }}>✓ {deals.length} deal{deals.length !== 1 ? 's' : ''} ready to import</div>
+          <div style={{ maxHeight: 220, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {deals.map((d, i) => (
               <div key={i} style={{ ...previewCard, padding: '10px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <span style={{ color: '#f0f0f0', fontWeight: 600, fontFamily: 'Syne, sans-serif', fontSize: 13 }}>{d.company_name}</span>
@@ -273,16 +395,14 @@ function ExcelTab({ onDealsReady }) {
               </div>
             ))}
           </div>
-          <button style={btn('primary')} onClick={() => onDealsReady(rows)}>
-            Import {rows.length} Deal{rows.length !== 1 ? 's' : ''}
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button style={btn('primary')} onClick={() => onDealsReady(deals)}>
+              Import {deals.length} Deal{deals.length !== 1 ? 's' : ''}
+            </button>
+            <button style={btn()} onClick={() => setDeals(null)}>← Adjust Mapping</button>
+          </div>
         </>
       )}
-
-      <div style={{ color: '#444', fontSize: 11, lineHeight: 1.6 }}>
-        Expected columns (flexible naming):<br />
-        <span style={{ color: '#555' }}>Company Name, Stage, Raise Amount, Valuation, Sector, Deal Owner, Website, Notes</span>
-      </div>
     </div>
   )
 }

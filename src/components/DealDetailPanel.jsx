@@ -55,18 +55,79 @@ const s = {
 }
 
 function BuyerRow({ buyer, onChange, onRemove }) {
+  const [expanded, setExpanded] = useState(false)
+  const hasContact = buyer.email || buyer.phone || buyer.firm
+
   return (
-    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
-      <input
-        style={{ ...s.input, flex: 1 }}
-        value={buyer.name}
-        onChange={e => onChange({ ...buyer, name: e.target.value })}
-        placeholder="Buyer name"
-      />
-      <button style={s.chip(buyer.status === 'Active')} onClick={() => onChange({ ...buyer, status: buyer.status === 'Active' ? 'Passed' : 'Active' })}>
-        {buyer.status}
-      </button>
-      <button style={s.iconBtn} onClick={onRemove} onMouseEnter={e => e.currentTarget.style.color = '#f87171'} onMouseLeave={e => e.currentTarget.style.color = '#333'}>×</button>
+    <div style={{ marginBottom: '8px' }}>
+      {/* Main row */}
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <input
+          style={{ ...s.input, flex: 1, cursor: 'text' }}
+          value={buyer.name}
+          onChange={e => onChange({ ...buyer, name: e.target.value })}
+          placeholder="Buyer name"
+          onDoubleClick={() => setExpanded(x => !x)}
+          title="Double-click to view/edit contact info"
+        />
+        {hasContact && !expanded && (
+          <span
+            title="Has contact info"
+            style={{ color: '#7c6af7', fontSize: '12px', cursor: 'pointer', flexShrink: 0 }}
+            onClick={() => setExpanded(true)}
+          >
+            ✉
+          </span>
+        )}
+        <button
+          style={s.chip(buyer.status === 'Active')}
+          onClick={() => onChange({ ...buyer, status: buyer.status === 'Active' ? 'Passed' : 'Active' })}
+        >
+          {buyer.status}
+        </button>
+        <button
+          style={{ ...s.iconBtn, color: expanded ? '#7c6af7' : '#333', fontSize: '10px' }}
+          onClick={() => setExpanded(x => !x)}
+          title="Toggle contact info"
+          onMouseEnter={e => e.currentTarget.style.color = expanded ? '#c4b5fd' : '#888'}
+          onMouseLeave={e => e.currentTarget.style.color = expanded ? '#7c6af7' : '#333'}
+        >
+          {expanded ? '▾' : '▸'}
+        </button>
+        <button style={s.iconBtn} onClick={onRemove} onMouseEnter={e => e.currentTarget.style.color = '#f87171'} onMouseLeave={e => e.currentTarget.style.color = '#333'}>×</button>
+      </div>
+
+      {/* Expanded contact card */}
+      {expanded && (
+        <div style={{ background: '#141414', border: '1px solid #1f1f1f', borderRadius: '8px', padding: '12px', marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            <input
+              style={s.input}
+              value={buyer.email || ''}
+              onChange={e => onChange({ ...buyer, email: e.target.value })}
+              placeholder="email@firm.com"
+            />
+            <input
+              style={s.input}
+              value={buyer.phone || ''}
+              onChange={e => onChange({ ...buyer, phone: e.target.value })}
+              placeholder="Phone"
+            />
+          </div>
+          <input
+            style={s.input}
+            value={buyer.firm || ''}
+            onChange={e => onChange({ ...buyer, firm: e.target.value })}
+            placeholder="Firm / Organization"
+          />
+          <input
+            style={s.input}
+            value={buyer.notes || ''}
+            onChange={e => onChange({ ...buyer, notes: e.target.value })}
+            placeholder="Notes..."
+          />
+        </div>
+      )}
     </div>
   )
 }
@@ -90,6 +151,7 @@ export default function DealDetailPanel({ deal, onClose, onEdit, onUpdate }) {
   const [buyers, setBuyers] = useState(deal.buyers || [])
   const [contacts, setContacts] = useState(deal.contacts || [])
   const [timeline, setTimeline] = useState(deal.timeline_to_close || '')
+  const [closeDate, setCloseDate] = useState(deal.expected_close_date || '')
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState('')
 
@@ -101,6 +163,7 @@ export default function DealDetailPanel({ deal, onClose, onEdit, onUpdate }) {
   useEffect(() => { save({ buyers }) }, [buyers])
   useEffect(() => { save({ contacts }) }, [contacts])
   useEffect(() => { if (timeline !== (deal.timeline_to_close || '')) save({ timeline_to_close: timeline || null }) }, [timeline])
+  useEffect(() => { if (closeDate !== (deal.expected_close_date || '')) save({ expected_close_date: closeDate || null }) }, [closeDate])
 
   const addBuyer = () => setBuyers(b => [...b, { id: crypto.randomUUID(), name: '', status: 'Active' }])
   const updateBuyer = (id, val) => setBuyers(b => b.map(x => x.id === id ? val : x))
@@ -162,17 +225,28 @@ export default function DealDetailPanel({ deal, onClose, onEdit, onUpdate }) {
           {deal.valuation && <div style={s.row}><span style={s.key}>Valuation</span><span style={s.val}>{formatCurrency(deal.valuation)}</span></div>}
           {deal.sector && <div style={s.row}><span style={s.key}>Sector</span><span style={s.val}>{deal.sector}</span></div>}
           {deal.deal_owner && <div style={s.row}><span style={s.key}>Owner</span><span style={s.val}>{deal.deal_owner}</span></div>}
-          {deal.website && <div style={s.row}><span style={s.key}>Website</span><a href={deal.website} target="_blank" rel="noopener noreferrer" style={{ ...s.val, color: '#9d8fff' }}>{deal.website}</a></div>}
+          {deal.website && <div style={s.row}><span style={s.key}>Website</span><a href={/^https?:\/\//i.test(deal.website) ? deal.website : `https://${deal.website}`} target="_blank" rel="noopener noreferrer" style={{ ...s.val, color: '#9d8fff' }}>{deal.website}</a></div>}
           {deal.notes && <div style={{ color: '#555', fontSize: '12px', marginTop: '4px', lineHeight: 1.6 }}>{deal.notes}</div>}
 
-          <div style={{ marginTop: '14px' }}>
-            <span style={s.label}>Timeline to Close</span>
-            <input
-              type="date"
-              style={s.input}
-              value={timeline}
-              onChange={e => setTimeline(e.target.value)}
-            />
+          <div style={{ marginTop: '14px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <div>
+              <span style={s.label}>Timeline to Close</span>
+              <input
+                type="date"
+                style={s.input}
+                value={timeline}
+                onChange={e => setTimeline(e.target.value)}
+              />
+            </div>
+            <div>
+              <span style={s.label}>Expected Close <span style={{ color: '#333', textTransform: 'none', letterSpacing: 0 }}>— Gantt</span></span>
+              <input
+                type="date"
+                style={s.input}
+                value={closeDate}
+                onChange={e => setCloseDate(e.target.value)}
+              />
+            </div>
           </div>
         </div>
 

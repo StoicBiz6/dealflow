@@ -3,7 +3,7 @@ import { STAGES, SECTORS } from '../lib/constants'
 
 const EMPTY = {
   company_name: '', stage: 'Sourced', raise_amount: '', valuation: '',
-  sector: '', deal_owner: '', website: '', notes: '',
+  sector: '', deal_owner: '', website: '', notes: '', fee_pct: '', expected_close_date: '',
 }
 
 const inputStyle = {
@@ -21,6 +21,8 @@ export default function DealModal({ deal, onSave, onClose }) {
         ...deal,
         raise_amount: deal.raise_amount != null ? deal.raise_amount / 1_000_000 : '',
         valuation: deal.valuation != null ? deal.valuation / 1_000_000 : '',
+        fee_pct: deal.fee_pct != null ? deal.fee_pct : '',
+        expected_close_date: deal.expected_close_date || '',
       })
     } else {
       setForm(EMPTY)
@@ -39,6 +41,8 @@ export default function DealModal({ deal, onSave, onClose }) {
       notes: form.notes,
       raise_amount: form.raise_amount !== '' ? parseFloat(form.raise_amount) * 1_000_000 : null,
       valuation: form.valuation !== '' ? parseFloat(form.valuation) * 1_000_000 : null,
+      fee_pct: form.fee_pct !== '' ? parseFloat(form.fee_pct) : null,
+      expected_close_date: form.expected_close_date || null,
     }
     onSave(payload)
   }
@@ -108,6 +112,24 @@ export default function DealModal({ deal, onSave, onClose }) {
             </div>
           </div>
 
+          <div>
+            <label style={labelStyle}>Fee % <span style={{ color: '#444', textTransform: 'none', letterSpacing: 0 }}>— applied to raise amount</span></label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type="number" step="0.1" min="0" max="100"
+                value={form.fee_pct}
+                onChange={set('fee_pct')}
+                placeholder="e.g. 2"
+                style={inputStyle}
+              />
+              {form.fee_pct !== '' && form.raise_amount !== '' && (
+                <span style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: '#9d8fff', fontSize: '12px', pointerEvents: 'none' }}>
+                  = ${((parseFloat(form.raise_amount) || 0) * (parseFloat(form.fee_pct) || 0) / 100).toFixed(2)}M
+                </span>
+              )}
+            </div>
+          </div>
+
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div>
               <label style={labelStyle}>Deal Owner</label>
@@ -122,6 +144,11 @@ export default function DealModal({ deal, onSave, onClose }) {
           <div>
             <label style={labelStyle}>Notes</label>
             <textarea value={form.notes} onChange={set('notes')} rows={3} placeholder="Any notes..." style={{ ...inputStyle, resize: 'vertical' }} />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Expected Close Date <span style={{ color: '#444', textTransform: 'none', letterSpacing: 0 }}>— shown in Timeline view</span></label>
+            <input type="date" value={form.expected_close_date} onChange={set('expected_close_date')} style={inputStyle} />
           </div>
 
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', paddingTop: '4px' }}>
