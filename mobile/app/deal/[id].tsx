@@ -25,6 +25,7 @@ import {
   formatCurrency,
 } from "@/lib/constants";
 import type {
+  Activity,
   BuyerUniverse,
   Contact,
   Deal,
@@ -40,6 +41,7 @@ const TABS = [
   "Tasks",
   "Contacts",
   "Documents",
+  "Activity",
   "Chat",
   "Buyers",
 ] as const;
@@ -199,9 +201,11 @@ export default function DealDetailScreen() {
                   ? (deal.contacts || []).length
                   : tab === "Documents"
                     ? (deal.documents || []).length
-                    : tab === "Buyers"
-                      ? (deal.buyer_universe || []).length
-                      : 0;
+                    : tab === "Activity"
+                      ? (deal.activity_log || []).length
+                      : tab === "Buyers"
+                        ? (deal.buyer_universe || []).length
+                        : 0;
             return (
               <Pressable
                 key={tab}
@@ -238,6 +242,9 @@ export default function DealDetailScreen() {
           <ContactsTab deal={deal} onUpdate={updateDeal} />
         )}
         {activeTab === "Documents" && <DocumentsTab deal={deal} />}
+        {activeTab === "Activity" && (
+          <ActivityTab deal={deal} onUpdate={updateDeal} />
+        )}
         {activeTab === "Chat" && (
           <ChatTab deal={deal} onUpdate={updateDeal} />
         )}
@@ -751,6 +758,7 @@ function TasksTab({
   onUpdate: (u: Partial<Deal>) => void;
 }) {
   const [newTask, setNewTask] = useState("");
+  const [newTaskDue, setNewTaskDue] = useState("");
   const insets = useSafeAreaInsets();
   const inputRef = useRef<TextInput>(null);
 
@@ -773,10 +781,12 @@ function TasksTab({
         id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
         text: newTask.trim(),
         done: false,
+        due: newTaskDue.trim() || undefined,
       },
     ];
     onUpdate({ tasks: updated });
     setNewTask("");
+    setNewTaskDue("");
   };
 
   const deleteTask = (taskId: string) => {
@@ -794,24 +804,34 @@ function TasksTab({
       keyboardShouldPersistTaps="handled"
     >
       {/* Add task input */}
-      <View className="flex-row gap-2 mb-6">
+      <View className="mb-6">
+        <View className="flex-row gap-2 mb-2">
+          <TextInput
+            ref={inputRef}
+            className="flex-1 bg-slate-800 text-white rounded-xl px-4 py-3 text-sm"
+            placeholder="Add a task..."
+            placeholderTextColor="#64748b"
+            value={newTask}
+            onChangeText={setNewTask}
+            onSubmitEditing={addTask}
+            returnKeyType="done"
+            blurOnSubmit={false}
+          />
+          <TouchableOpacity
+            onPress={addTask}
+            className="bg-blue-600 rounded-xl px-4 py-3 items-center justify-center"
+          >
+            <Text className="text-white font-medium text-sm">Add</Text>
+          </TouchableOpacity>
+        </View>
         <TextInput
-          ref={inputRef}
-          className="flex-1 bg-slate-800 text-white rounded-xl px-4 py-3 text-sm"
-          placeholder="Add a task..."
-          placeholderTextColor="#64748b"
-          value={newTask}
-          onChangeText={setNewTask}
-          onSubmitEditing={addTask}
-          returnKeyType="done"
-          blurOnSubmit={false}
+          className="bg-slate-800/60 text-slate-300 rounded-xl px-4 py-2.5 text-xs"
+          placeholder="Due date (YYYY-MM-DD) — optional"
+          placeholderTextColor="#475569"
+          value={newTaskDue}
+          onChangeText={setNewTaskDue}
+          keyboardType="numbers-and-punctuation"
         />
-        <TouchableOpacity
-          onPress={addTask}
-          className="bg-blue-600 rounded-xl px-4 py-3 items-center justify-center"
-        >
-          <Text className="text-white font-medium text-sm">Add</Text>
-        </TouchableOpacity>
       </View>
 
       {/* Pending */}
@@ -1457,6 +1477,198 @@ function ChatTab({
         </TouchableOpacity>
       </View>
     </View>
+  );
+}
+
+// ─── Activity Tab ─────────────────────────────────────────────────────────────
+
+const ACTIVITY_TYPE_CONFIG: Record<
+  Activity["type"],
+  { icon: string; color: string; label: string }
+> = {
+  call: { icon: "call-outline", color: "#4ade80", label: "Call" },
+  email: { icon: "mail-outline", color: "#3b82f6", label: "Email" },
+  meeting: { icon: "people-outline", color: "#a78bfa", label: "Meeting" },
+  note: { icon: "create-outline", color: "#94a3b8", label: "Note" },
+};
+
+function ActivityTab({
+  deal,
+  onUpdate,
+}: {
+  deal: Deal;
+  onUpdate: (u: Partial<Deal>) => void;
+}) {
+  const insets = useSafeAreaInsets();
+  const [showAdd, setShowAdd] = useState(false);
+  const [actType, setActType] = useState<Activity["type"]>("note");
+  const [actNote, setActNote] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const activities = [...(deal.activity_log || [])].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
+
+  const pickType = () => {
+    Alert.alert(
+      "Activity Type",
+      undefined,
+      (["call", "email", "meeting", "note"] as Activity["type"][]).map((t) => ({
+        text: ACTIVITY_TYPE_CONFIG[t].label,
+        onPress: () => setActType(t),
+      }))
+    );
+  };
+
+  const addActivity = async () => {
+    if (!actNote.trim()) {
+      Alert.alert("Required", "Please add a note.");
+      return;
+    }
+    setSaving(true);
+    const newActivity: Activity = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      type: actType,
+      note: actNote.trim(),
+      date: new Date().toISOString(),
+    };
+    await onUpdate({ activity_log: [...(deal.activity_log || []), newActivity] });
+    setActNote("");
+    setShowAdd(false);
+    setSaving(false);
+  };
+
+  const deleteActivity = (actId: string) => {
+    Alert.alert("Delete activity?", undefined, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () =>
+          onUpdate({
+            activity_log: activities.filter((a) => a.id !== actId),
+          }),
+      },
+    ]);
+  };
+
+  return (
+    <ScrollView
+      className="flex-1"
+      contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 16 }}
+      keyboardShouldPersistTaps="handled"
+    >
+      {/* Add activity button */}
+      {!showAdd && (
+        <TouchableOpacity
+          onPress={() => setShowAdd(true)}
+          className="bg-blue-600/10 border border-blue-500/30 rounded-xl py-3 flex-row items-center justify-center gap-2 mb-4"
+        >
+          <Ionicons name="add-circle-outline" size={16} color="#3b82f6" />
+          <Text className="text-blue-400 font-medium text-sm">
+            Log Activity
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Add form */}
+      {showAdd && (
+        <View className="bg-slate-800 rounded-2xl p-4 mb-4">
+          <Text className="text-white font-semibold mb-4">Log Activity</Text>
+
+          <TouchableOpacity
+            onPress={pickType}
+            className="bg-slate-700 rounded-xl px-4 py-2.5 flex-row items-center gap-2 mb-3 self-start"
+          >
+            <Ionicons
+              name={ACTIVITY_TYPE_CONFIG[actType].icon as never}
+              size={16}
+              color={ACTIVITY_TYPE_CONFIG[actType].color}
+            />
+            <Text className="text-white text-sm">
+              {ACTIVITY_TYPE_CONFIG[actType].label}
+            </Text>
+            <Ionicons name="chevron-down" size={14} color="#64748b" />
+          </TouchableOpacity>
+
+          <TextInput
+            className="bg-slate-700 text-white rounded-xl px-4 py-3 text-sm min-h-20 mb-4"
+            placeholder="What happened?"
+            placeholderTextColor="#475569"
+            value={actNote}
+            onChangeText={setActNote}
+            multiline
+            autoFocus
+            style={{ textAlignVertical: "top" }}
+          />
+
+          <View className="flex-row gap-2">
+            <TouchableOpacity
+              onPress={() => {
+                setShowAdd(false);
+                setActNote("");
+              }}
+              className="flex-1 bg-slate-700 rounded-xl py-3 items-center"
+            >
+              <Text className="text-slate-300 text-sm">Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={addActivity}
+              disabled={saving}
+              className="flex-1 bg-blue-600 rounded-xl py-3 items-center"
+            >
+              <Text className="text-white font-medium text-sm">
+                {saving ? "Saving..." : "Log"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {/* Activity list */}
+      {activities.length === 0 && !showAdd ? (
+        <View className="items-center py-16">
+          <Ionicons name="pulse-outline" size={44} color="#334155" />
+          <Text className="text-slate-400 text-base mt-3">No activity yet</Text>
+          <Text className="text-slate-600 text-sm mt-1">
+            Log calls, emails, and meetings above
+          </Text>
+        </View>
+      ) : (
+        activities.map((act) => {
+          const cfg = ACTIVITY_TYPE_CONFIG[act.type] ?? ACTIVITY_TYPE_CONFIG.note;
+          return (
+            <Pressable
+              key={act.id}
+              onLongPress={() => deleteActivity(act.id)}
+              className="flex-row gap-3 mb-4"
+            >
+              <View
+                className="w-8 h-8 rounded-full items-center justify-center flex-shrink-0 mt-0.5"
+                style={{ backgroundColor: cfg.color + "20" }}
+              >
+                <Ionicons name={cfg.icon as never} size={16} color={cfg.color} />
+              </View>
+              <View className="flex-1">
+                <View className="flex-row items-center gap-2 mb-1">
+                  <Text className="text-slate-300 text-xs font-semibold uppercase tracking-wide">
+                    {cfg.label}
+                  </Text>
+                  <Text className="text-slate-600 text-xs">
+                    {new Date(act.date).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </Text>
+                </View>
+                <Text className="text-white text-sm leading-5">{act.note}</Text>
+              </View>
+            </Pressable>
+          );
+        })
+      )}
+    </ScrollView>
   );
 }
 

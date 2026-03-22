@@ -55,10 +55,67 @@ export function useWorkspace() {
     }
   }, []);
 
+  const createWorkspace = useCallback(
+    async (name: string) => {
+      if (!user) throw new Error("Not authenticated");
+      const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+      const { data: ws, error: wsErr } = await supabase
+        .from("workspaces")
+        .insert({ name, owner_id: user.id, invite_code: inviteCode })
+        .select()
+        .single();
+
+      if (wsErr) throw wsErr;
+
+      await supabase
+        .from("workspace_members")
+        .insert({ workspace_id: ws.id, user_id: user.id });
+
+      const newWs = ws as Workspace;
+      setWorkspaces((prev) => [...prev, newWs]);
+      setActiveWorkspaceIdState(newWs.id);
+      await SecureStore.setItemAsync(STORAGE_KEY, newWs.id);
+      return newWs;
+    },
+    [user]
+  );
+
+  const joinWorkspace = useCallback(
+    async (code: string) => {
+      if (!user) throw new Error("Not authenticated");
+
+      const { data: ws, error: wsErr } = await supabase
+        .from("workspaces")
+        .select("*")
+        .eq("invite_code", code.toUpperCase().trim())
+        .single();
+
+      if (wsErr || !ws) throw new Error("Invalid invite code");
+
+      const { error: memberErr } = await supabase
+        .from("workspace_members")
+        .insert({ workspace_id: ws.id, user_id: user.id });
+
+      // Ignore duplicate member errors
+      if (memberErr && !memberErr.message.includes("duplicate")) {
+        throw memberErr;
+      }
+
+      await loadWorkspaces();
+      setActiveWorkspaceIdState(ws.id);
+      await SecureStore.setItemAsync(STORAGE_KEY, ws.id);
+      return ws as Workspace;
+    },
+    [user, loadWorkspaces]
+  );
+
   return {
     workspaces,
     activeWorkspaceId,
     setActiveWorkspace,
+    createWorkspace,
+    joinWorkspace,
     loading,
     refetch: loadWorkspaces,
   };

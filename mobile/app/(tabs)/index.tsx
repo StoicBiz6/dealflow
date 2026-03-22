@@ -1,7 +1,9 @@
 import { useUser } from "@clerk/clerk-expo";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useMemo } from "react";
 import {
+  ActivityIndicator,
   RefreshControl,
   ScrollView,
   Text,
@@ -22,7 +24,7 @@ function isStale(deal: Deal): boolean {
 export default function DashboardScreen() {
   const { user } = useUser();
   const { activeWorkspaceId } = useWorkspace();
-  const { deals, loading, refetch } = useDeals(activeWorkspaceId);
+  const { deals, loading, error, refetch } = useDeals(activeWorkspaceId);
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -46,7 +48,6 @@ export default function DashboardScreen() {
       )
       .slice(0, 6);
 
-    // Stage breakdown
     const byStage = ACTIVE_STAGES.map((stage) => {
       const stageDeals = active.filter((d) => d.stage === stage);
       const raise = stageDeals.reduce((s, d) => s + (d.raise_amount || 0), 0);
@@ -70,7 +71,7 @@ export default function DashboardScreen() {
       contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 16 }}
       refreshControl={
         <RefreshControl
-          refreshing={loading}
+          refreshing={loading && deals.length > 0}
           onRefresh={refetch}
           tintColor="#3b82f6"
         />
@@ -83,110 +84,166 @@ export default function DashboardScreen() {
         </Text>
       </View>
 
-      {/* KPI Grid */}
-      <View className="flex-row gap-3 mb-3">
-        <KPICard label="Active Deals" value={String(stats.active)} />
-        <KPICard label="Total Raise" value={formatCurrency(stats.totalRaise)} />
-      </View>
-      <View className="flex-row gap-3 mb-6">
-        <KPICard
-          label="Est. Fees"
-          value={formatCurrency(stats.totalFees)}
-          accent
-        />
-        <KPICard label="Closed" value={String(stats.closed)} />
-      </View>
-
-      {/* Stale Deals Alert */}
-      {stats.stale.length > 0 && (
-        <View className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 mb-6">
-          <Text className="text-amber-400 font-semibold mb-3">
-            ⚠ {stats.stale.length} Stale Deal
-            {stats.stale.length > 1 ? "s" : ""} (14+ days)
-          </Text>
-          {stats.stale.map((deal) => (
-            <TouchableOpacity
-              key={deal.id}
-              onPress={() => router.push(`/deal/${deal.id}`)}
-              className="flex-row justify-between items-center py-2.5 border-b border-amber-500/20 last:border-0"
-            >
-              <Text className="text-white font-medium">
-                {deal.company_name}
-              </Text>
-              <Text className="text-amber-400 text-xs">{deal.stage}</Text>
-            </TouchableOpacity>
-          ))}
+      {/* Error state */}
+      {error && !loading && (
+        <View className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 mb-6 flex-row items-center gap-3">
+          <Ionicons name="alert-circle-outline" size={20} color="#f87171" />
+          <View className="flex-1">
+            <Text className="text-red-400 font-medium text-sm">
+              Failed to load deals
+            </Text>
+            <Text className="text-red-400/70 text-xs mt-0.5">{error}</Text>
+          </View>
+          <TouchableOpacity onPress={refetch}>
+            <Text className="text-blue-400 text-sm">Retry</Text>
+          </TouchableOpacity>
         </View>
       )}
 
-      {/* Fee Pipeline */}
-      {stats.feePipeline.length > 0 && (
-        <View className="bg-slate-800 rounded-2xl p-4 mb-6">
-          <Text className="text-white font-semibold mb-4">Fee Pipeline</Text>
-          {stats.feePipeline.map((deal) => {
-            const fee = (deal.raise_amount || 0) * ((deal.fee_pct || 2) / 100);
-            const color =
-              STAGE_COLORS[deal.stage as keyof typeof STAGE_COLORS] ??
-              "#64748b";
-            return (
-              <TouchableOpacity
-                key={deal.id}
-                onPress={() => router.push(`/deal/${deal.id}`)}
-                className="flex-row justify-between items-center py-3 border-b border-slate-700 last:border-0"
-              >
-                <View className="flex-1 mr-3">
-                  <Text className="text-white font-medium" numberOfLines={1}>
+      {/* Initial loading state */}
+      {loading && deals.length === 0 ? (
+        <View className="py-20 items-center gap-3">
+          <ActivityIndicator size="large" color="#3b82f6" />
+          <Text className="text-slate-500 text-sm">Loading deals...</Text>
+        </View>
+      ) : deals.length === 0 && !loading ? (
+        /* Empty state */
+        <View className="py-16 items-center px-6">
+          <View className="w-16 h-16 rounded-full bg-blue-600/10 items-center justify-center mb-4">
+            <Ionicons name="briefcase-outline" size={32} color="#3b82f6" />
+          </View>
+          <Text className="text-white text-lg font-semibold mb-2">
+            No deals yet
+          </Text>
+          <Text className="text-slate-400 text-sm text-center mb-6">
+            Start tracking your deals. Tap the Pipeline tab and hit + to add
+            your first deal.
+          </Text>
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/pipeline")}
+            className="bg-blue-600 rounded-xl px-6 py-3 flex-row items-center gap-2"
+          >
+            <Ionicons name="add" size={18} color="white" />
+            <Text className="text-white font-semibold">Add First Deal</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <>
+          {/* KPI Grid */}
+          <View className="flex-row gap-3 mb-3">
+            <KPICard label="Active Deals" value={String(stats.active)} />
+            <KPICard
+              label="Total Raise"
+              value={formatCurrency(stats.totalRaise)}
+            />
+          </View>
+          <View className="flex-row gap-3 mb-6">
+            <KPICard
+              label="Est. Fees"
+              value={formatCurrency(stats.totalFees)}
+              accent
+            />
+            <KPICard label="Closed" value={String(stats.closed)} />
+          </View>
+
+          {/* Stale Deals Alert */}
+          {stats.stale.length > 0 && (
+            <View className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 mb-6">
+              <Text className="text-amber-400 font-semibold mb-3">
+                ⚠ {stats.stale.length} Stale Deal
+                {stats.stale.length > 1 ? "s" : ""} (14+ days)
+              </Text>
+              {stats.stale.map((deal) => (
+                <TouchableOpacity
+                  key={deal.id}
+                  onPress={() => router.push(`/deal/${deal.id}`)}
+                  className="flex-row justify-between items-center py-2.5 border-b border-amber-500/20 last:border-0"
+                >
+                  <Text className="text-white font-medium">
                     {deal.company_name}
                   </Text>
-                  <View
-                    className="rounded-full px-2 py-0.5 self-start mt-1"
-                    style={{ backgroundColor: color + "20" }}
-                  >
-                    <Text className="text-xs" style={{ color }}>
-                      {deal.stage}
-                    </Text>
-                  </View>
-                </View>
-                <Text className="text-green-400 font-semibold">
-                  {formatCurrency(fee)}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      )}
+                  <Text className="text-amber-400 text-xs">{deal.stage}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
 
-      {/* By Stage */}
-      {stats.byStage.length > 0 && (
-        <View className="bg-slate-800 rounded-2xl p-4">
-          <Text className="text-white font-semibold mb-4">By Stage</Text>
-          {stats.byStage.map(({ stage, count, raise }) => {
-            const color =
-              STAGE_COLORS[stage as keyof typeof STAGE_COLORS] ?? "#64748b";
-            return (
-              <View
-                key={stage}
-                className="flex-row items-center justify-between py-2.5 border-b border-slate-700 last:border-0"
-              >
-                <View className="flex-row items-center gap-2">
+          {/* Fee Pipeline */}
+          {stats.feePipeline.length > 0 && (
+            <View className="bg-slate-800 rounded-2xl p-4 mb-6">
+              <Text className="text-white font-semibold mb-4">
+                Fee Pipeline
+              </Text>
+              {stats.feePipeline.map((deal) => {
+                const fee =
+                  (deal.raise_amount || 0) * ((deal.fee_pct || 2) / 100);
+                const color =
+                  STAGE_COLORS[deal.stage as keyof typeof STAGE_COLORS] ??
+                  "#64748b";
+                return (
+                  <TouchableOpacity
+                    key={deal.id}
+                    onPress={() => router.push(`/deal/${deal.id}`)}
+                    className="flex-row justify-between items-center py-3 border-b border-slate-700 last:border-0"
+                  >
+                    <View className="flex-1 mr-3">
+                      <Text
+                        className="text-white font-medium"
+                        numberOfLines={1}
+                      >
+                        {deal.company_name}
+                      </Text>
+                      <View
+                        className="rounded-full px-2 py-0.5 self-start mt-1"
+                        style={{ backgroundColor: color + "20" }}
+                      >
+                        <Text className="text-xs" style={{ color }}>
+                          {deal.stage}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text className="text-green-400 font-semibold">
+                      {formatCurrency(fee)}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+
+          {/* By Stage */}
+          {stats.byStage.length > 0 && (
+            <View className="bg-slate-800 rounded-2xl p-4">
+              <Text className="text-white font-semibold mb-4">By Stage</Text>
+              {stats.byStage.map(({ stage, count, raise }) => {
+                const color =
+                  STAGE_COLORS[stage as keyof typeof STAGE_COLORS] ?? "#64748b";
+                return (
                   <View
-                    className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: color }}
-                  />
-                  <Text className="text-slate-300 text-sm">{stage}</Text>
-                </View>
-                <View className="flex-row items-center gap-3">
-                  <Text className="text-slate-400 text-sm">
-                    {count} deal{count > 1 ? "s" : ""}
-                  </Text>
-                  <Text className="text-white text-sm font-medium">
-                    {formatCurrency(raise)}
-                  </Text>
-                </View>
-              </View>
-            );
-          })}
-        </View>
+                    key={stage}
+                    className="flex-row items-center justify-between py-2.5 border-b border-slate-700 last:border-0"
+                  >
+                    <View className="flex-row items-center gap-2">
+                      <View
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: color }}
+                      />
+                      <Text className="text-slate-300 text-sm">{stage}</Text>
+                    </View>
+                    <View className="flex-row items-center gap-3">
+                      <Text className="text-slate-400 text-sm">
+                        {count} deal{count > 1 ? "s" : ""}
+                      </Text>
+                      <Text className="text-white text-sm font-medium">
+                        {formatCurrency(raise)}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </>
       )}
     </ScrollView>
   );
