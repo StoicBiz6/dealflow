@@ -3,6 +3,7 @@ import { Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 import { SignedIn, SignedOut } from '@clerk/clerk-react'
 import Navbar from './components/Navbar'
 import LandingPage from './LandingPage'
+import { SignIn, SignUp } from '@clerk/clerk-react'
 import DealModal from './components/DealModal'
 import ImportModal from './components/ImportModal'
 import WorkspaceModal from './components/WorkspaceModal'
@@ -132,6 +133,8 @@ export default function App() {
       <SignedIn>
         <Routes>
           <Route path="/" element={<MainView />} />
+          <Route path="/sign-in/*" element={<SignIn routing="path" path="/sign-in" />} />
+          <Route path="/sign-up/*" element={<SignUp routing="path" path="/sign-up" />} />
           <Route path="/deal/:id" element={<DealPage />} />
           <Route path="/deal-room/:id" element={<DealRoomView />} />
         </Routes>
