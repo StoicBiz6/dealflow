@@ -129,12 +129,16 @@ function MainView() {
 export default function App() {
   return (
     <>
-      <SignedOut><LandingPage /></SignedOut>
+      <SignedOut>
+        <Routes>
+          <Route path="/sign-in/*" element={<SignIn routing="path" path="/sign-in" />} />
+          <Route path="/sign-up/*" element={<SignUp routing="path" path="/sign-up" />} />
+          <Route path="*" element={<LandingPage />} />
+        </Routes>
+      </SignedOut>
       <SignedIn>
         <Routes>
           <Route path="/" element={<MainView />} />
-          <Route path="/sign-in/*" element={<SignIn routing="path" path="/sign-in" />} />
-          <Route path="/sign-up/*" element={<SignUp routing="path" path="/sign-up" />} />
           <Route path="/deal/:id" element={<DealPage />} />
           <Route path="/deal-room/:id" element={<DealRoomView />} />
         </Routes>
