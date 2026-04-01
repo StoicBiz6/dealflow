@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom'
-import { SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react'
+import { SignedIn, SignedOut } from '@clerk/clerk-react'
 import Navbar from './components/Navbar'
+import LandingPage from './LandingPage'
 import DealModal from './components/DealModal'
 import ImportModal from './components/ImportModal'
 import WorkspaceModal from './components/WorkspaceModal'
@@ -23,10 +24,10 @@ function MainView() {
   const [showImport, setShowImport] = useState(false)
   const [showWorkspace, setShowWorkspace] = useState(false)
 
-  // Workspace — load first
+  // Workspace â€” load first
   const { workspaces, activeWorkspace, loading: wsLoading, userId, switchWorkspace, loadMembers, createWorkspace, joinWorkspace, leaveWorkspace } = useWorkspace()
 
-  // Deals — pass workspace id so queries scope correctly
+  // Deals â€” pass workspace id so queries scope correctly
   const workspaceId = activeWorkspace?.id ?? null
   const { deals, loading, error, addDeal, updateDeal, deleteDeal, updateStage, refetch } = useDeals(wsLoading ? undefined : workspaceId)
 
@@ -127,7 +128,7 @@ function MainView() {
 export default function App() {
   return (
     <>
-      <SignedOut><RedirectToSignIn /></SignedOut>
+      <SignedOut><LandingPage /></SignedOut>
       <SignedIn>
         <Routes>
           <Route path="/" element={<MainView />} />
