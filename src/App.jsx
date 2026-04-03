@@ -56,6 +56,12 @@ function MainView() {
   )
 }
 
+function SelectOrMain() {
+  const navigate = useNavigate()
+  useEffect(() => { navigate('/select', { replace: true }) }, [])
+  return null
+}
+
 export default function App() {
   return (
     <>
@@ -74,9 +80,10 @@ export default function App() {
           <Route path="/sell/buyers" element={<SellShell><SSBuyers /></SellShell>} />
           <Route path="/sell/bids" element={<SellShell><SSBids /></SellShell>} />
           <Route path="/sell/dataroom" element={<SellShell><SSDataRoom /></SellShell>} />
-          <Route path="/" element={<MainView />} />
+          <Route path="/raise" element={<MainView />} />
           <Route path="/deal/:id" element={<DealPage />} />
           <Route path="/deal-room/:id" element={<DealRoomView />} />
+          <Route path="*" element={<SelectOrMain />} />
         </Routes>
       </SignedIn>
     </>
