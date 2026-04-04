@@ -515,12 +515,24 @@ function OverviewTab({ mandate, updateMandate }) {
             <>
               {/* Type filter */}
               <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:10 }}>
-                {['PE', 'Strategic', 'Family Office', 'Growth Equity'].map(t => (
-                  <button key={t} onClick={e=>{e.stopPropagation(); toggleBuyerType(t)}}
-                    style={{ fontSize:10, padding:'3px 10px', borderRadius:99, border:`0.5px solid ${buyerTypes.includes(t) ? 'rgba(123,199,94,0.4)' : 'rgba(255,255,255,0.1)'}`, background: buyerTypes.includes(t) ? 'rgba(123,199,94,0.12)' : 'transparent', color: buyerTypes.includes(t) ? c.green : c.text3, cursor:'pointer', fontFamily:'inherit' }}>
-                    {t}
-                  </button>
-                ))}
+                {(() => {
+                  const ALL_TYPES = ['PE', 'Strategic', 'Family Office', 'Growth Equity']
+                  const allSelected = ALL_TYPES.every(t => buyerTypes.includes(t))
+                  return (
+                    <>
+                      <button onClick={e=>{e.stopPropagation(); setBuyerTypes(allSelected ? [] : ALL_TYPES)}}
+                        style={{ fontSize:10, padding:'3px 10px', borderRadius:99, border:`0.5px solid ${allSelected ? 'rgba(123,199,94,0.4)' : 'rgba(255,255,255,0.1)'}`, background: allSelected ? 'rgba(123,199,94,0.12)' : 'transparent', color: allSelected ? c.green : c.text3, cursor:'pointer', fontFamily:'inherit' }}>
+                        All
+                      </button>
+                      {ALL_TYPES.map(t => (
+                        <button key={t} onClick={e=>{e.stopPropagation(); toggleBuyerType(t)}}
+                          style={{ fontSize:10, padding:'3px 10px', borderRadius:99, border:`0.5px solid ${buyerTypes.includes(t) ? 'rgba(123,199,94,0.4)' : 'rgba(255,255,255,0.1)'}`, background: buyerTypes.includes(t) ? 'rgba(123,199,94,0.12)' : 'transparent', color: buyerTypes.includes(t) ? c.green : c.text3, cursor:'pointer', fontFamily:'inherit' }}>
+                          {t}
+                        </button>
+                      ))}
+                    </>
+                  )
+                })()}
                 <button onClick={e=>{e.stopPropagation(); loadBuyers()}} disabled={buyerLoading || buyerTypes.length === 0}
                   style={{ fontSize:10, padding:'3px 12px', borderRadius:99, border:'0.5px solid rgba(255,255,255,0.11)', background:'transparent', color:c.text2, cursor:'pointer', fontFamily:'inherit', marginLeft:'auto' }}>
                   {buyerLoading ? 'Loading…' : buyers ? '↺ Refresh' : '✦ Find Buyers'}
