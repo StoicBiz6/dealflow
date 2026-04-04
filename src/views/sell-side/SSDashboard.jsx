@@ -2,6 +2,8 @@ import { useMandateContext } from '../../components/sell-side/SellShell'
 import { useNavigate } from 'react-router-dom'
 import { kpi, pill, panel, table, c } from '../../components/sell-side/ssStyles'
 
+const parseNotes = (notes) => { try { const p = JSON.parse(notes || '{}'); return typeof p === 'object' ? p : {} } catch { return {} } }
+
 const STAGE_COLOR = {
   'Prep phase': 'gray', 'NDA / CIM': 'blue', 'Mgmt meetings': 'blue',
   'First round bids': 'amber', 'Final round': 'amber', 'Exclusivity': 'green', 'Sign & close': 'green',
@@ -47,29 +49,34 @@ export default function SSDashboard() {
           <div style={{color:c.text3,fontSize:13}}>No mandates yet — click "+ New Mandate" to get started.</div>
         ) : (
           <>
-            <div style={{...table.row, gridTemplateColumns:'1fr 110px 140px 140px 32px', paddingBottom:8, borderBottom:'0.5px solid rgba(255,255,255,0.11)'}}>
+            <div style={{...table.row, gridTemplateColumns:'1fr 100px 100px 100px 140px 32px', paddingBottom:8, borderBottom:'0.5px solid rgba(255,255,255,0.11)'}}>
               <span style={table.header}>Name</span>
+              <span style={table.header}>Revenue</span>
+              <span style={table.header}>EBITDA</span>
               <span style={table.header}>EV range</span>
               <span style={table.header}>Stage</span>
-              <span style={table.header}>Lead advisor</span>
               <span/>
             </div>
-            {mandates.map(m => (
-              <div key={m.id} style={{...table.row, gridTemplateColumns:'1fr 110px 140px 140px 32px', cursor:'pointer'}}
-                onClick={() => { setActiveMandateId(m.id); navigate(`/sell/deal/${m.id}`) }}>
-                <div>
-                  <div style={table.name}>{m.name}</div>
-                  {m.sector && <div style={table.sub}>{m.sector}</div>}
+            {mandates.map(m => {
+              const mx = parseNotes(m.notes).metrics || {}
+              return (
+                <div key={m.id} style={{...table.row, gridTemplateColumns:'1fr 100px 100px 100px 140px 32px', cursor:'pointer'}}
+                  onClick={() => { setActiveMandateId(m.id); navigate(`/sell/deal/${m.id}`) }}>
+                  <div>
+                    <div style={table.name}>{m.name}</div>
+                    {m.sector && <div style={table.sub}>{m.sector}</div>}
+                  </div>
+                  <div style={table.mono}>{mx.revenue || '—'}</div>
+                  <div style={table.mono}>{mx.ebitda || '—'}</div>
+                  <div style={table.mono}>{fmtEV(m)}</div>
+                  <div><span style={pill(STAGE_COLOR[m.stage] || 'gray')}>{m.stage}</span></div>
+                  <button
+                    onClick={e => { e.stopPropagation(); if (confirm(`Delete ${m.name}?`)) deleteMandate(m.id) }}
+                    style={{background:'none',border:'none',color:'#444',cursor:'pointer',fontSize:14,padding:'2px 4px'}}
+                  >×</button>
                 </div>
-                <div style={table.mono}>{fmtEV(m)}</div>
-                <div><span style={pill(STAGE_COLOR[m.stage] || 'gray')}>{m.stage}</span></div>
-                <div style={{fontSize:12,color:c.text2}}>{m.lead_advisor || '—'}</div>
-                <button
-                  onClick={e => { e.stopPropagation(); if (confirm(`Delete ${m.name}?`)) deleteMandate(m.id) }}
-                  style={{background:'none',border:'none',color:'#444',cursor:'pointer',fontSize:14,padding:'2px 4px'}}
-                >×</button>
-              </div>
-            ))}
+              )
+            })}
           </>
         )}
       </div>

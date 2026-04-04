@@ -111,6 +111,7 @@ function OverviewTab({ mandate, updateMandate }) {
   const [addingTask, setAddingTask] = useState(false)
   const [newContact, setNewContact] = useState({ role:'', name:'' })
   const [addingContact, setAddingContact] = useState(false)
+  const [metrics, setMetrics] = useState(parseNotes(mandate.notes).metrics || {})
   const [news, setNews] = useState(null)
   const [newsLoading, setNewsLoading] = useState(false)
   const [newsCollapsed, setNewsCollapsed] = useState(false)
@@ -141,6 +142,7 @@ function OverviewTab({ mandate, updateMandate }) {
     const obj = parseNotes(mandate.notes)
     setSummary(obj.summary || '')
     setActivity(obj.activity || [])
+    setMetrics(obj.metrics || {})
     setContacts(mandate.contacts || [])
     setChecklist(mandate.checklist || [])
   }, [mandate.id])
@@ -575,6 +577,30 @@ function OverviewTab({ mandate, updateMandate }) {
 
       {/* ── Right sidebar ── */}
       <div>
+        {/* Key Metrics */}
+        <div style={s.card}>
+          <span style={s.label}>Key Metrics</span>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+            {[
+              { key:'revenue', label:'Revenue (LTM)' },
+              { key:'ebitda', label:'EBITDA (LTM)' },
+              { key:'ebitda_margin', label:'EBITDA Margin' },
+              { key:'growth_rate', label:'Revenue Growth' },
+            ].map(({ key, label }) => (
+              <div key={key}>
+                <div style={{ fontSize:10, color:'#444', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:5 }}>{label}</div>
+                <input
+                  style={s.input}
+                  placeholder="—"
+                  value={metrics[key] || ''}
+                  onChange={e => setMetrics(m => ({ ...m, [key]: e.target.value }))}
+                  onBlur={() => saveNotePatch({ metrics })}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Mandate details */}
         <div style={s.card}>
           <span style={s.label}>Mandate Details</span>
