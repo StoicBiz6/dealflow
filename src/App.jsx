@@ -27,7 +27,7 @@ import { useWorkspace } from './hooks/useWorkspace'
 import DealChat from './components/DealChat'
 
 function MainView() {
-  const [view, setView] = useState('pipeline')
+  const [view, setView] = useState('dashboard')
   const [modalDeal, setModalDeal] = useState(null)
   const [showImport, setShowImport] = useState(false)
   const [showWorkspace, setShowWorkspace] = useState(false)
