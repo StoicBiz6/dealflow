@@ -13,10 +13,6 @@ const NAV = [
     { id: 'processes', label: 'Active Processes', path: '/sell/processes' },
     { id: 'buyers', label: 'Buyer Universe', path: '/sell/buyers' },
   ]},
-  { group: 'Deal Room', items: [
-    { id: 'bids', label: 'Bids & Offers', path: '/sell/bids' },
-    { id: 'dataroom', label: 'Data Room', path: '/sell/dataroom' },
-  ]},
 ]
 
 export default function SellShell({ children }) {

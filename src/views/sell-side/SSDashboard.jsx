@@ -56,7 +56,7 @@ export default function SSDashboard() {
             </div>
             {mandates.map(m => (
               <div key={m.id} style={{...table.row, gridTemplateColumns:'1fr 110px 140px 140px 32px', cursor:'pointer'}}
-                onClick={() => { setActiveMandateId(m.id); navigate('/sell/processes') }}>
+                onClick={() => { setActiveMandateId(m.id); navigate(`/sell/deal/${m.id}`) }}>
                 <div>
                   <div style={table.name}>{m.name}</div>
                   {m.sector && <div style={table.sub}>{m.sector}</div>}

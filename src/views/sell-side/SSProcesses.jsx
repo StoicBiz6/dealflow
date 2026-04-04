@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useMandateContext } from '../../components/sell-side/SellShell'
 import { c } from '../../components/sell-side/ssStyles'
 
@@ -22,6 +23,7 @@ const fmt = (n) => {
 
 export default function SSProcesses() {
   const { mandates, updateMandate, setActiveMandateId, loading } = useMandateContext()
+  const navigate = useNavigate()
   const [draggedId, setDraggedId] = useState(null)
   const [overStage, setOverStage] = useState(null)
 
@@ -82,7 +84,7 @@ export default function SSProcesses() {
                   mandate={m}
                   onDragStart={() => setDraggedId(m.id)}
                   onDragEnd={() => { setDraggedId(null); setOverStage(null) }}
-                  onClick={() => setActiveMandateId(m.id)}
+                  onClick={() => { setActiveMandateId(m.id); navigate(`/sell/deal/${m.id}`) }}
                   onStage={stage => updateMandate(m.id, { stage })}
                 />
               ))}

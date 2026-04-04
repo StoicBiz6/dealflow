@@ -22,6 +22,7 @@ import SSProcesses from './views/sell-side/SSProcesses'
 import SSBuyers from './views/sell-side/SSBuyers'
 import SSBids from './views/sell-side/SSBids'
 import SSDataRoom from './views/sell-side/SSDataRoom'
+import SSMandateDetail from './views/sell-side/SSMandateDetail'
 import { useDeals } from './hooks/useDeals'
 import { useWorkspace } from './hooks/useWorkspace'
 import DealChat from './components/DealChat'
@@ -81,6 +82,7 @@ export default function App() {
           <Route path="/sell/buyers" element={<SellShell><SSBuyers /></SellShell>} />
           <Route path="/sell/bids" element={<SellShell><SSBids /></SellShell>} />
           <Route path="/sell/dataroom" element={<SellShell><SSDataRoom /></SellShell>} />
+          <Route path="/sell/deal/:id" element={<SellShell><SSMandateDetail /></SellShell>} />
           <Route path="/raise" element={<MainView />} />
           <Route path="/deal/:id" element={<DealPage />} />
           <Route path="/deal-room/:id" element={<DealRoomView />} />
