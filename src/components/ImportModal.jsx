@@ -193,7 +193,7 @@ function CIMTab({ onDealReady }) {
 
     // 2. Parse via API
     try {
-      const res = await fetch('/api/parse-cim', {
+      const res = await fetch('/api/cim?action=parse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: publicUrl }),

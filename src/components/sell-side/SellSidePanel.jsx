@@ -81,7 +81,7 @@ function CIMTab({ s, activeMandate, updateMandate, addMandate }) {
     reader.onload = async (e) => {
       const base64 = e.target.result.split(',')[1]
       try {
-        const res = await fetch('/api/sell-parse-cim', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ base64, name: file.name }) })
+        const res = await fetch('/api/sell?action=parse-cim', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ base64, name: file.name }) })
         const data = await res.json()
         if (data.error) throw new Error(data.error)
         setResult(data)
@@ -223,7 +223,7 @@ function ValuationTab({ s, activeMandate, fmt }) {
   const run = async () => {
     setLoading(true); setError(null)
     try {
-      const res = await fetch('/api/sell-valuation', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ mandate: activeMandate }) })
+      const res = await fetch('/api/sell?action=valuation', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ mandate: activeMandate }) })
       const data = await res.json()
       if (data.error) throw new Error(data.error)
       setResult(data)
@@ -279,7 +279,7 @@ function CompsTab({ s, activeMandate, fmt }) {
   const run = async () => {
     setLoading(true); setError(null)
     try {
-      const res = await fetch('/api/sell-valuation', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ mandate: activeMandate }) })
+      const res = await fetch('/api/sell?action=valuation', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ mandate: activeMandate }) })
       const data = await res.json()
       if (data.error) throw new Error(data.error)
       setComps(data.comps || [])
@@ -322,7 +322,7 @@ function EmailTab({ s, activeMandate, buyers }) {
     setLoading(true); setError(null)
     const buyer = buyers.find(b => b.id === selectedBuyer) || null
     try {
-      const res = await fetch('/api/sell-email', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ mandate: activeMandate, buyer }) })
+      const res = await fetch('/api/sell?action=email', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ mandate: activeMandate, buyer }) })
       const data = await res.json()
       if (data.error) throw new Error(data.error)
       setResult(data)

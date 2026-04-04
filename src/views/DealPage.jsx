@@ -418,7 +418,7 @@ export default function DealPage() {
       setCimPreviewSource('cim')
       setCimParsing(true)
       try {
-        const res = await fetch('/api/parse-cim', {
+        const res = await fetch('/api/cim?action=parse', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ url: publicUrl }),
@@ -704,7 +704,7 @@ export default function DealPage() {
     setCimInput('')
     setCimQALoading(true)
     try {
-      const res = await fetch('/api/cim-qa', {
+      const res = await fetch('/api/cim?action=qa', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question: q, deal: { ...deal, memo, metrics, score } }),
@@ -1177,7 +1177,7 @@ export default function DealPage() {
                       onClick={async () => {
                         setCimPreviewSource('cim'); setCimParsing(true); setCimPreview(null)
                         try {
-                          const res = await fetch('/api/parse-cim', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: doc.url }) })
+                          const res = await fetch('/api/cim?action=parse', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: doc.url }) })
                           const parsed = await res.json()
                           if (parsed.error) {
                             alert('CIM parsing failed: ' + parsed.error)
