@@ -16,18 +16,7 @@ const tokenCache = {
     }
   },
   async saveToken(key: string, value: string) {
-    try {
-      await SecureStore.setItemAsync(key, value);
-    } catch (err) {
-      console.error("[TokenCache] saveToken error:", err);
-    }
-  },
-  async deleteToken(key: string) {
-    try {
-      await SecureStore.deleteItemAsync(key);
-    } catch (err) {
-      console.error("[TokenCache] deleteToken error:", err);
-    }
+    await SecureStore.setItemAsync(key, value);
   },
 };
 

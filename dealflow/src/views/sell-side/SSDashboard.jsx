@@ -1,0 +1,32 @@
+﻿import { kpi, pill, panel, table, c } from '../../components/sell-side/ssStyles'
+const MANDATES = [
+  { name: 'Project Falcon', sector: 'Healthcare SaaS', ev: '$180-220M', stage: 'First round bids', sc: 'amber', days: 74 },
+  { name: 'Project Summit', sector: 'Industrial tech',  ev: '$90-120M',  stage: 'NDA / CIM',        sc: 'blue',  days: 112 },
+  { name: 'Project Nova',   sector: 'Fintech',          ev: '$250-300M', stage: 'Exclusivity',       sc: 'green', days: 18 },
+  { name: 'Project Ember',  sector: 'Energy services',  ev: '$60-80M',   stage: 'Prep phase',        sc: 'gray',  days: 149 },
+]
+export default function SSDashboard() {
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:14}}>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(5,minmax(0,1fr))',gap:10}}>
+        {[{label:'Active processes',value:'4',sub:'$680M in play'},{label:'Buyers engaged',value:'87',sub:'across all mandates'},{label:'Bids received',value:'23',sub:'this quarter'},{label:'In exclusivity',value:'1',sub:'Project Nova'},{label:'Avg days to close',value:'118',sub:'last 4 transactions'}].map(k=>(
+          <div key={k.label} style={kpi.card}><div style={kpi.label}>{k.label}</div><div style={kpi.value}>{k.value}</div><div style={kpi.sub}>{k.sub}</div></div>
+        ))}
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'minmax(0,1.6fr) minmax(0,1fr)',gap:14}}>
+        <div style={panel.wrap}>
+          <div style={panel.title}>Active mandates</div>
+          {MANDATES.map(m=>(
+            <div key={m.name} style={{...table.row,gridTemplateColumns:'1fr 80px 120px 64px'}}>
+              <div><div style={table.name}>{m.name}</div><div style={table.sub}>{m.sector}</div></div>
+              <div style={table.mono}>{m.ev}</div>
+              <div><span style={pill(m.sc)}>{m.stage}</span></div>
+              <div style={{...table.mono,color:m.days<30?c.amber:c.text1}}>{m.days}</div>
+            </div>
+          ))}
+        </div>
+        <div style={panel.wrap}><div style={panel.title}>Activity</div></div>
+      </div>
+    </div>
+  )
+}
