@@ -1,6 +1,8 @@
 import { UserButton } from '@clerk/clerk-react'
+import { useNavigate } from 'react-router-dom'
 
-export default function Navbar({ view, setView, onAddDeal, onImport, activeWorkspace: workspace, onWorkspace, taskCount }) {
+export default function Navbar({ view, setView, onAdd, onImport, workspaceName: workspace, onWorkspace, pendingTaskCount: taskCount }) {
+  const navigate = useNavigate()
   return (
     <nav style={{
       height: '52px',
@@ -9,22 +11,16 @@ export default function Navbar({ view, setView, onAddDeal, onImport, activeWorks
       display: 'flex',
       alignItems: 'center',
       padding: '0 24px',
-      gap: '24px',
+      gap: '16px',
       position: 'sticky',
       top: 0,
       zIndex: 40,
     }}>
-      {/* Logo */}
-      <span style={{
-        fontFamily: 'Syne, sans-serif',
-        fontWeight: 700,
-        fontSize: '16px',
-        letterSpacing: '0.08em',
-        color: '#f0f0f0',
-        marginRight: '8px',
-      }}>
-        DEALFLOW
-      </span>
+      {/* Platform switcher */}
+      <div style={{ background: '#141414', border: '0.5px solid rgba(255,255,255,0.07)', borderRadius: 8, padding: 3, display: 'flex', gap: 2, flexShrink: 0 }}>
+        <button style={{ fontSize: 11, fontWeight: 500, padding: '5px 10px', border: '0.5px solid rgba(124,106,247,0.3)', borderRadius: 6, background: '#0d1f35', color: '#7c9fff', cursor: 'pointer', fontFamily: 'inherit' }}>Capital Raise</button>
+        <button onClick={() => navigate('/sell/dashboard')} style={{ fontSize: 11, fontWeight: 500, padding: '5px 10px', border: 'none', borderRadius: 6, background: 'transparent', color: '#555', cursor: 'pointer', fontFamily: 'inherit' }}>Sell Side</button>
+      </div>
 
       {/* View tabs */}
       <div style={{ display: 'flex', gap: '2px', flex: 1 }}>
@@ -111,7 +107,7 @@ export default function Navbar({ view, setView, onAddDeal, onImport, activeWorks
           ↑ Import
         </button>
         <button
-          onClick={onAddDeal}
+          onClick={onAdd}
           style={{
             background: '#7c6af7',
             border: 'none',

@@ -25,7 +25,7 @@ export default function SellShell({ children }) {
         <div style={{padding:'1.25rem 1rem 1rem',borderBottom:'0.5px solid rgba(255,255,255,0.07)'}}>
           <div style={{fontSize:10,fontWeight:500,letterSpacing:'0.2em',color:'#555',marginBottom:14}}>DEALFLOW</div>
           <div style={{background:'#1a1a1a',border:'0.5px solid rgba(255,255,255,0.07)',borderRadius:8,padding:3,display:'flex',gap:2}}>
-            <button onClick={() => navigate('/')} style={{flex:1,fontSize:11,fontWeight:500,padding:'5px 4px',border:'none',borderRadius:6,background:'transparent',color:'#555',cursor:'pointer',fontFamily:'inherit'}}>Capital Raise</button>
+            <button onClick={() => navigate('/raise')} style={{flex:1,fontSize:11,fontWeight:500,padding:'5px 4px',border:'none',borderRadius:6,background:'transparent',color:'#555',cursor:'pointer',fontFamily:'inherit'}}>Capital Raise</button>
             <button style={{flex:1,fontSize:11,fontWeight:500,padding:'5px 4px',border:'0.5px solid rgba(59,109,17,0.3)',borderRadius:6,background:'#0d2014',color:'#7bc75e',cursor:'pointer',fontFamily:'inherit'}}>Sell Side</button>
           </div>
         </div>
