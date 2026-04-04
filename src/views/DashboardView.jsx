@@ -44,7 +44,7 @@ export default function DashboardView({ deals, onOpenDeal }) {
   const [staleCollapsed, setStaleCollapsed] = useState(false)
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
+    <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto', height: '100%', overflowY: 'auto', boxSizing: 'border-box' }}>
 
       {/* Stale Deal Alerts */}
       {staleDeals.length > 0 && (

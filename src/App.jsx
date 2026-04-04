@@ -44,7 +44,8 @@ function MainView() {
   const openModal = (deal = null) => setModalDeal(deal || {})
   const closeModal = () => setModalDeal(null)
   const handleSave = async (data) => { if (data.id) { await updateDeal(data.id, data) } else { await addDeal(data) } closeModal() }
-  const views = { pipeline: <KanbanView deals={deals} loading={loading} onEdit={openModal} onStageChange={updateStage} />, dashboard: <DashboardView deals={deals} loading={loading} />, list: <ListView deals={deals} loading={loading} onEdit={openModal} />, timeline: <TimelineView deals={deals} loading={loading} />, tasks: <TasksView deals={deals} loading={loading} onUpdateTasks={handleUpdateDealTasks} />, news: <NewsView />, dealroom: <DealRoomView /> }
+  const openDeal = (deal) => navigate(`/deal/${deal.id}`)
+  const views = { pipeline: <KanbanView deals={deals} loading={loading} onEdit={openModal} onOpenDeal={openDeal} onStageChange={updateStage} />, dashboard: <DashboardView deals={deals} loading={loading} onOpenDeal={openDeal} />, list: <ListView deals={deals} loading={loading} onEdit={openModal} />, timeline: <TimelineView deals={deals} loading={loading} />, tasks: <TasksView deals={deals} loading={loading} onUpdateTasks={handleUpdateDealTasks} />, news: <NewsView />, dealroom: <DealRoomView /> }
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#0a0a0a' }}>
       <Navbar view={view} setView={setView} onAdd={() => openModal()} onImport={() => setShowImport(true)} onWorkspace={() => setShowWorkspace(true)} pendingTaskCount={pendingTaskCount} workspaceName={activeWorkspace?.name} userId={userId} />

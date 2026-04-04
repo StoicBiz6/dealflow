@@ -3,7 +3,7 @@ import { STAGES, STAGE_COLORS } from '../lib/constants'
 import { formatCurrency } from '../lib/utils'
 import StageBadge from '../components/StageBadge'
 
-export default function KanbanView({ deals, onEdit, onDelete, onStageChange }) {
+export default function KanbanView({ deals, onEdit, onOpenDeal, onDelete, onStageChange }) {
   const byStage = {}
   STAGES.forEach(s => { byStage[s] = [] })
   deals.forEach(d => {
@@ -97,6 +97,7 @@ export default function KanbanView({ deals, onEdit, onDelete, onStageChange }) {
                   key={deal.id}
                   deal={deal}
                   onEdit={onEdit}
+                  onOpenDeal={onOpenDeal}
                   onDelete={onDelete}
                   onDragStart={handleDragStart}
                 />
@@ -109,14 +110,14 @@ export default function KanbanView({ deals, onEdit, onDelete, onStageChange }) {
   )
 }
 
-function DealCard({ deal, onEdit, onDelete, onDragStart }) {
+function DealCard({ deal, onEdit, onOpenDeal, onDelete, onDragStart }) {
   const [menu, setMenu] = useState(false)
 
   return (
     <div
       draggable
       onDragStart={(e) => onDragStart(e, deal.id)}
-      onClick={() => onEdit(deal)}
+      onClick={() => onOpenDeal?.(deal)}
       style={{
         background: '#111111',
         border: '1px solid #1f1f1f',
