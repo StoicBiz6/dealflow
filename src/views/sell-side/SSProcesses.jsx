@@ -1,158 +1,163 @@
 import { useState } from 'react'
 import { useMandateContext } from '../../components/sell-side/SellShell'
-import { pill, panel, c } from '../../components/sell-side/ssStyles'
+import { c } from '../../components/sell-side/ssStyles'
 
 const STAGES = ['Prep phase', 'NDA / CIM', 'Mgmt meetings', 'First round bids', 'Final round', 'Exclusivity', 'Sign & close']
 
-function stageStatus(mandateStage, step) {
-  const mi = STAGES.indexOf(mandateStage)
-  const si = STAGES.indexOf(step)
-  if (si < mi) return 'done'
-  if (si === mi) return 'active'
-  return 'pending'
+const STAGE_COLORS = {
+  'Prep phase':       { text: '#888',    border: 'rgba(255,255,255,0.08)' },
+  'NDA / CIM':        { text: '#7ea6e0', border: 'rgba(126,166,224,0.2)' },
+  'Mgmt meetings':    { text: '#b08af0', border: 'rgba(176,138,240,0.2)' },
+  'First round bids': { text: '#f0c070', border: 'rgba(240,192,112,0.2)' },
+  'Final round':      { text: '#f0a050', border: 'rgba(240,160,80,0.2)'  },
+  'Exclusivity':      { text: '#7bc75e', border: 'rgba(123,199,94,0.2)'  },
+  'Sign & close':     { text: '#7bc75e', border: 'rgba(123,199,94,0.3)'  },
+}
+
+const fmt = (n) => {
+  if (!n) return null
+  if (n >= 1000) return `$${(n / 1000).toFixed(1)}B`
+  return `$${n}M`
 }
 
 export default function SSProcesses() {
-  const { activeMandate, updateMandate, loading } = useMandateContext()
-  const [newContact, setNewContact] = useState({ role: '', name: '' })
-  const [newTask, setNewTask] = useState('')
-  const [addingContact, setAddingContact] = useState(false)
-  const [addingTask, setAddingTask] = useState(false)
+  const { mandates, updateMandate, setActiveMandateId, loading } = useMandateContext()
+  const [draggedId, setDraggedId] = useState(null)
+  const [overStage, setOverStage] = useState(null)
 
-  if (loading) return <div style={{color:c.text3,fontSize:13}}>Loading...</div>
-  if (!activeMandate) return <div style={{color:c.text3,fontSize:13}}>Select or create a mandate to get started.</div>
+  if (loading) return <div style={{ color: c.text3, fontSize: 13 }}>Loading...</div>
 
-  const contacts = activeMandate.contacts || []
-  const checklist = activeMandate.checklist || []
+  const byStage = {}
+  STAGES.forEach(s => { byStage[s] = [] })
+  mandates.forEach(m => {
+    if (byStage[m.stage]) byStage[m.stage].push(m)
+    else byStage['Prep phase'].push(m)
+  })
 
-  const toggleTask = async (idx) => {
-    const updated = checklist.map((t, i) => i === idx ? { ...t, done: !t.done } : t)
-    await updateMandate(activeMandate.id, { checklist: updated })
-  }
-
-  const addTask = async () => {
-    if (!newTask.trim()) return
-    const updated = [...checklist, { label: newTask.trim(), done: false, owner: '' }]
-    await updateMandate(activeMandate.id, { checklist: updated })
-    setNewTask('')
-    setAddingTask(false)
-  }
-
-  const removeTask = async (idx) => {
-    await updateMandate(activeMandate.id, { checklist: checklist.filter((_, i) => i !== idx) })
-  }
-
-  const addContact = async () => {
-    if (!newContact.name.trim()) return
-    const updated = [...contacts, { ...newContact }]
-    await updateMandate(activeMandate.id, { contacts: updated })
-    setNewContact({ role: '', name: '' })
-    setAddingContact(false)
-  }
-
-  const removeContact = async (idx) => {
-    await updateMandate(activeMandate.id, { contacts: contacts.filter((_, i) => i !== idx) })
-  }
-
-  const setStage = async (stage) => {
-    await updateMandate(activeMandate.id, { stage })
+  const handleDrop = (e, stage) => {
+    e.preventDefault()
+    if (draggedId) updateMandate(draggedId, { stage })
+    setDraggedId(null)
+    setOverStage(null)
   }
 
   return (
-    <div style={{display:'flex',flexDirection:'column',gap:14}}>
-      {/* Timeline */}
-      <div style={panel.wrap}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:20}}>
-          <div style={{display:'flex',alignItems:'center',gap:10}}>
-            <span style={{fontSize:14,fontWeight:500,color:c.text1}}>{activeMandate.name}</span>
-            <span style={pill(activeMandate.stage === 'Exclusivity' || activeMandate.stage === 'Sign & close' ? 'green' : activeMandate.stage === 'First round bids' || activeMandate.stage === 'Final round' ? 'amber' : 'blue')}>{activeMandate.stage}</span>
-          </div>
-          {activeMandate.lead_advisor && <span style={{fontSize:12,color:c.text3}}>Lead: {activeMandate.lead_advisor}</span>}
-        </div>
-        <div style={{display:'grid',gridTemplateColumns:`repeat(${STAGES.length},minmax(0,1fr))`,position:'relative'}}>
-          {STAGES.map((step, i) => {
-            const s = stageStatus(activeMandate.stage, step)
-            const dot = {
-              done: { background:'#3B6D11', color:'#fff' },
-              active: { background:'#854F0B', color:'#fff' },
-              pending: { background:'#202020', border:'1.5px solid rgba(255,255,255,0.11)', color:c.text3 },
-            }[s]
-            return (
-              <div key={step} style={{display:'flex',flexDirection:'column',alignItems:'center',position:'relative',cursor:'pointer'}}
-                onClick={() => setStage(step)}>
-                {i < STAGES.length - 1 && <div style={{position:'absolute',top:10,left:'50%',width:'100%',height:1,background:'rgba(255,255,255,0.11)',zIndex:0}}/>}
-                <div style={{width:20,height:20,borderRadius:'50%',zIndex:1,display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,fontWeight:500,...dot}}>
-                  {s === 'done' ? '✓' : s === 'active' ? '●' : i + 1}
-                </div>
-                <div style={{fontSize:10,color:s==='active'?c.amber:c.text2,marginTop:6,textAlign:'center',lineHeight:1.4}}>{step}</div>
+    <div style={{ display: 'flex', gap: 10, overflowX: 'auto', minHeight: 'calc(100vh - 120px)', alignItems: 'flex-start', paddingBottom: 24 }}>
+      {STAGES.map(stage => {
+        const cards = byStage[stage]
+        const colors = STAGE_COLORS[stage]
+        const isOver = overStage === stage
+
+        return (
+          <div
+            key={stage}
+            onDragOver={e => { e.preventDefault(); setOverStage(stage) }}
+            onDragLeave={() => setOverStage(null)}
+            onDrop={e => handleDrop(e, stage)}
+            style={{ minWidth: 200, width: 200, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 8 }}
+          >
+            {/* Column header */}
+            <div style={{
+              background: isOver ? '#1a1a1a' : '#111',
+              border: `0.5px solid ${isOver ? colors.border : 'rgba(255,255,255,0.07)'}`,
+              borderRadius: 8,
+              padding: '9px 11px',
+              transition: 'all 0.15s',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ color: colors.text, fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                  {stage}
+                </span>
+                <span style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 10, color: '#666', fontSize: 10, padding: '1px 6px' }}>
+                  {cards.length}
+                </span>
               </div>
-            )
-          })}
-        </div>
+            </div>
+
+            {/* Cards */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minHeight: 40 }}>
+              {cards.map(m => (
+                <MandateCard
+                  key={m.id}
+                  mandate={m}
+                  onDragStart={() => setDraggedId(m.id)}
+                  onDragEnd={() => { setDraggedId(null); setOverStage(null) }}
+                  onClick={() => setActiveMandateId(m.id)}
+                  onStage={stage => updateMandate(m.id, { stage })}
+                />
+              ))}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function MandateCard({ mandate, onDragStart, onDragEnd, onClick, onStage }) {
+  const [menu, setMenu] = useState(false)
+  const evMid = mandate.ev_low && mandate.ev_high
+    ? Math.round((mandate.ev_low + mandate.ev_high) / 2)
+    : mandate.ev_low || null
+
+  return (
+    <div
+      draggable
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      onClick={() => { setMenu(false); onClick() }}
+      style={{
+        background: '#111',
+        border: '0.5px solid rgba(255,255,255,0.08)',
+        borderRadius: 8,
+        padding: '10px 11px',
+        cursor: 'grab',
+        position: 'relative',
+        transition: 'border-color 0.15s',
+      }}
+      onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'}
+      onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'}
+    >
+      <div style={{ fontSize: 13, fontWeight: 600, color: '#f0f0f0', marginBottom: 5 }}>{mandate.name}</div>
+
+      {mandate.sector && (
+        <div style={{ fontSize: 10, color: c.text3, marginBottom: 4 }}>{mandate.sector}</div>
+      )}
+
+      {evMid && (
+        <div style={{ fontSize: 12, color: c.green, fontFamily: 'DM Mono, monospace', marginBottom: 4 }}>{fmt(evMid)}</div>
+      )}
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        {mandate.lead_advisor
+          ? <span style={{ fontSize: 10, color: c.text3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>{mandate.lead_advisor}</span>
+          : <span />
+        }
+        <button
+          onClick={e => { e.stopPropagation(); setMenu(m => !m) }}
+          style={{ background: 'none', border: 'none', color: '#444', cursor: 'pointer', fontSize: 15, padding: '0 2px', lineHeight: 1, marginLeft: 'auto' }}
+        >
+          ···
+        </button>
       </div>
 
-      <div style={{display:'grid',gridTemplateColumns:'repeat(2,minmax(0,1fr))',gap:14}}>
-        {/* Checklist */}
-        <div style={panel.wrap}>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
-            <div style={panel.title}>Process checklist</div>
-            <button onClick={() => setAddingTask(true)} style={{fontSize:11,color:c.green,background:'none',border:'none',cursor:'pointer',fontFamily:'inherit'}}>+ Add</button>
-          </div>
-          {checklist.length === 0 && !addingTask && (
-            <div style={{fontSize:12,color:c.text3}}>No tasks yet.</div>
-          )}
-          {checklist.map((item, i) => (
-            <div key={i} style={{display:'flex',alignItems:'flex-start',gap:10,padding:'7px 0',borderBottom:i<checklist.length-1?'0.5px solid rgba(255,255,255,0.07)':'none'}}>
-              <div onClick={() => toggleTask(i)} style={{width:15,height:15,borderRadius:4,flexShrink:0,marginTop:1,display:'flex',alignItems:'center',justifyContent:'center',background:item.done?'#3B6D11':'transparent',border:item.done?'none':'0.5px solid rgba(255,255,255,0.11)',cursor:'pointer'}}>
-                {item.done && <span style={{color:'#fff',fontSize:9}}>✓</span>}
-              </div>
-              <div style={{fontSize:12,color:item.done?c.text3:c.text1,flex:1,textDecoration:item.done?'line-through':'none'}}>{item.label}</div>
-              {item.owner && <div style={{fontSize:10,color:c.text3}}>{item.owner}</div>}
-              <button onClick={() => removeTask(i)} style={{background:'none',border:'none',color:'#333',cursor:'pointer',fontSize:12,padding:0,lineHeight:1}}>×</button>
-            </div>
+      {menu && (
+        <div
+          style={{ position: 'absolute', right: 8, top: 36, zIndex: 20, background: '#1a1a1a', border: '0.5px solid rgba(255,255,255,0.11)', borderRadius: 6, overflow: 'hidden', minWidth: 140 }}
+          onClick={e => e.stopPropagation()}
+        >
+          <div style={{ fontSize: 9, color: c.text3, padding: '6px 10px 3px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Move to</div>
+          {STAGES.map(s => s !== mandate.stage && (
+            <button key={s} onClick={() => { setMenu(false); onStage(s) }}
+              style={{ display: 'block', width: '100%', background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: 11, padding: '6px 10px', textAlign: 'left', fontFamily: 'inherit' }}
+              onMouseEnter={e => e.currentTarget.style.background = '#222'}
+              onMouseLeave={e => e.currentTarget.style.background = 'none'}
+            >
+              {s}
+            </button>
           ))}
-          {addingTask && (
-            <div style={{display:'flex',gap:6,marginTop:8}}>
-              <input autoFocus value={newTask} onChange={e=>setNewTask(e.target.value)} onKeyDown={e=>e.key==='Enter'&&addTask()} placeholder="Task description"
-                style={{flex:1,background:'#1a1a1a',border:'0.5px solid rgba(255,255,255,0.11)',borderRadius:5,color:'#f0f0f0',fontSize:12,padding:'5px 8px',fontFamily:'inherit'}}/>
-              <button onClick={addTask} style={{fontSize:11,padding:'5px 10px',borderRadius:5,border:'none',background:c.green,color:'#0f0f0f',cursor:'pointer',fontWeight:600}}>Add</button>
-              <button onClick={()=>setAddingTask(false)} style={{fontSize:11,padding:'5px 8px',borderRadius:5,border:'0.5px solid rgba(255,255,255,0.11)',background:'transparent',color:c.text3,cursor:'pointer'}}>✕</button>
-            </div>
-          )}
         </div>
-
-        {/* Key contacts */}
-        <div style={panel.wrap}>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
-            <div style={panel.title}>Key contacts</div>
-            <button onClick={() => setAddingContact(true)} style={{fontSize:11,color:c.green,background:'none',border:'none',cursor:'pointer',fontFamily:'inherit'}}>+ Add</button>
-          </div>
-          {contacts.length === 0 && !addingContact && (
-            <div style={{fontSize:12,color:c.text3}}>No contacts yet.</div>
-          )}
-          {contacts.map((item, i) => (
-            <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'7px 0',borderBottom:i<contacts.length-1?'0.5px solid rgba(255,255,255,0.07)':'none'}}>
-              <span style={{fontSize:11,color:c.text3}}>{item.role}</span>
-              <div style={{display:'flex',alignItems:'center',gap:8}}>
-                <span style={{fontSize:13,fontWeight:500,color:c.text1}}>{item.name}</span>
-                <button onClick={() => removeContact(i)} style={{background:'none',border:'none',color:'#333',cursor:'pointer',fontSize:12,padding:0}}>×</button>
-              </div>
-            </div>
-          ))}
-          {addingContact && (
-            <div style={{display:'flex',flexDirection:'column',gap:6,marginTop:8}}>
-              <input autoFocus value={newContact.role} onChange={e=>setNewContact(c=>({...c,role:e.target.value}))} placeholder="Role (e.g. Lead advisor)"
-                style={{background:'#1a1a1a',border:'0.5px solid rgba(255,255,255,0.11)',borderRadius:5,color:'#f0f0f0',fontSize:12,padding:'5px 8px',fontFamily:'inherit'}}/>
-              <input value={newContact.name} onChange={e=>setNewContact(c=>({...c,name:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&addContact()} placeholder="Name"
-                style={{background:'#1a1a1a',border:'0.5px solid rgba(255,255,255,0.11)',borderRadius:5,color:'#f0f0f0',fontSize:12,padding:'5px 8px',fontFamily:'inherit'}}/>
-              <div style={{display:'flex',gap:6}}>
-                <button onClick={addContact} style={{fontSize:11,padding:'5px 10px',borderRadius:5,border:'none',background:c.green,color:'#0f0f0f',cursor:'pointer',fontWeight:600}}>Add</button>
-                <button onClick={()=>setAddingContact(false)} style={{fontSize:11,padding:'5px 8px',borderRadius:5,border:'0.5px solid rgba(255,255,255,0.11)',background:'transparent',color:c.text3,cursor:'pointer'}}>✕</button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+      )}
     </div>
   )
 }
