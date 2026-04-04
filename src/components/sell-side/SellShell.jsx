@@ -2,6 +2,7 @@ import { createContext, useContext, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useUser, UserButton } from '@clerk/clerk-react'
 import { useMandates } from '../../hooks/useSellSide'
+import SellSidePanel from './SellSidePanel'
 
 export const MandateContext = createContext(null)
 export const useMandateContext = () => useContext(MandateContext)
@@ -93,14 +94,41 @@ export default function SellShell({ children }) {
                 <span style={{fontSize:10,fontWeight:500,padding:'3px 9px',borderRadius:99,background:'#0d2014',color:'#7bc75e',border:'0.5px solid rgba(59,109,17,0.3)'}}>{activeMandate.name}</span>
               )}
             </div>
-            <button onClick={() => setShowNewMandate(true)} style={{fontSize:12,padding:'6px 14px',borderRadius:8,border:'none',background:'#f0f0f0',color:'#0f0f0f',cursor:'pointer',fontWeight:500,fontFamily:'inherit'}}>+ New Mandate</button>
+            <div style={{display:'flex',gap:8}}>
+              {activeMandate && (
+                <ShareButton mandate={activeMandate} />
+              )}
+              <button onClick={() => setShowNewMandate(true)} style={{fontSize:12,padding:'6px 14px',borderRadius:8,border:'none',background:'#f0f0f0',color:'#0f0f0f',cursor:'pointer',fontWeight:500,fontFamily:'inherit'}}>+ New Mandate</button>
+            </div>
           </header>
           <main style={{overflowY:'auto',padding:'1.5rem',background:'#0f0f0f'}}>{children}</main>
         </div>
       </div>
 
+      <SellSidePanel />
       {showNewMandate && <MandateModal onClose={() => setShowNewMandate(false)} onSave={async (data) => { await addMandate(data); setShowNewMandate(false) }} />}
     </MandateContext.Provider>
+  )
+}
+
+function ShareButton({ mandate }) {
+  const [copied, setCopied] = useState(false)
+  const share = () => {
+    const evRange = mandate.ev_low && mandate.ev_high ? `$${mandate.ev_low}–${mandate.ev_high}M` : mandate.ev_low ? `$${mandate.ev_low}M+` : 'undisclosed'
+    const text = [
+      `📋 ${mandate.name}`,
+      mandate.sector ? `Sector: ${mandate.sector}` : null,
+      `EV range: ${evRange}`,
+      `Stage: ${mandate.stage}`,
+      mandate.lead_advisor ? `Advisor: ${mandate.lead_advisor}` : null,
+    ].filter(Boolean).join('\n')
+    navigator.clipboard.writeText(text)
+    setCopied(true); setTimeout(() => setCopied(false), 2000)
+  }
+  return (
+    <button onClick={share} style={{fontSize:12,padding:'6px 14px',borderRadius:8,border:'0.5px solid rgba(255,255,255,0.11)',background:'transparent',color:copied?'#7bc75e':'#888',cursor:'pointer',fontFamily:'inherit'}}>
+      {copied ? '✓ Copied' : '↗ Share'}
+    </button>
   )
 }
 
