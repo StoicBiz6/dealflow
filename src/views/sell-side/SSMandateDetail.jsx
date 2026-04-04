@@ -121,10 +121,11 @@ function OverviewTab({ mandate, updateMandate }) {
   const [valCollapsed, setValCollapsed] = useState(false)
 
   // Buyer Universe
-  const [buyers, setBuyers] = useState(null)
+  const [buyers, setBuyers] = useState([])
   const [buyerLoading, setBuyerLoading] = useState(false)
   const [buyerCollapsed, setBuyerCollapsed] = useState(false)
-  const [buyerTypes, setBuyerTypes] = useState(['PE', 'Strategic', 'Family Office', 'Growth Equity'])
+  const [buyerTypeSelect, setBuyerTypeSelect] = useState('')
+  const [buyerSearch, setBuyerSearch] = useState('')
   const { buyers: trackedBuyers, addBuyer } = useBuyers(mandate.id)
 
   // Email generator
@@ -252,7 +253,6 @@ function OverviewTab({ mandate, updateMandate }) {
   }
 
   // Buyer Universe
-  const toggleBuyerType = (t) => setBuyerTypes(prev => prev.includes(t) ? prev.filter(x=>x!==t) : [...prev, t])
   const loadBuyers = async () => {
     setBuyerLoading(true)
     try {
@@ -265,10 +265,15 @@ function OverviewTab({ mandate, updateMandate }) {
           stage: mandate.stage,
           valuation: mandate.ev_low ? mandate.ev_low * 1e6 : null,
           notes: summary,
-        }, types: buyerTypes }),
+        }, types: buyerTypeSelect ? [buyerTypeSelect] : undefined }),
       })
       const data = await res.json()
-      if (!data.error) setBuyers(Array.isArray(data) ? data : data.buyers || [])
+      if (!data.error) {
+        const incoming = Array.isArray(data) ? data : data.buyers || []
+        // Merge preserving any existing contact info
+        const existing = buyers.reduce((m, b) => { m[b.name] = b; return m }, {})
+        setBuyers(incoming.map(b => ({ ...b, ...existing[b.name] })))
+      }
     } catch {}
     setBuyerLoading(false)
   }
@@ -513,34 +518,30 @@ function OverviewTab({ mandate, updateMandate }) {
           </div>
           {!buyerCollapsed && (
             <>
-              {/* Type filter */}
-              <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:10 }}>
-                {(() => {
-                  const ALL_TYPES = ['PE', 'Strategic', 'Family Office', 'Growth Equity']
-                  const allSelected = ALL_TYPES.every(t => buyerTypes.includes(t))
-                  return (
-                    <>
-                      <button onClick={e=>{e.stopPropagation(); setBuyerTypes(allSelected ? [] : ALL_TYPES)}}
-                        style={{ fontSize:10, padding:'3px 10px', borderRadius:99, border:`0.5px solid ${allSelected ? 'rgba(123,199,94,0.4)' : 'rgba(255,255,255,0.1)'}`, background: allSelected ? 'rgba(123,199,94,0.12)' : 'transparent', color: allSelected ? c.green : c.text3, cursor:'pointer', fontFamily:'inherit' }}>
-                        All
-                      </button>
-                      {ALL_TYPES.map(t => (
-                        <button key={t} onClick={e=>{e.stopPropagation(); toggleBuyerType(t)}}
-                          style={{ fontSize:10, padding:'3px 10px', borderRadius:99, border:`0.5px solid ${buyerTypes.includes(t) ? 'rgba(123,199,94,0.4)' : 'rgba(255,255,255,0.1)'}`, background: buyerTypes.includes(t) ? 'rgba(123,199,94,0.12)' : 'transparent', color: buyerTypes.includes(t) ? c.green : c.text3, cursor:'pointer', fontFamily:'inherit' }}>
-                          {t}
-                        </button>
-                      ))}
-                    </>
-                  )
-                })()}
-                <button onClick={e=>{e.stopPropagation(); loadBuyers()}} disabled={buyerLoading || buyerTypes.length === 0}
-                  style={{ fontSize:10, padding:'3px 12px', borderRadius:99, border:'0.5px solid rgba(255,255,255,0.11)', background:'transparent', color:c.text2, cursor:'pointer', fontFamily:'inherit', marginLeft:'auto' }}>
-                  {buyerLoading ? 'Loading…' : buyers ? '↺ Refresh' : '✦ Find Buyers'}
+              {/* Controls row */}
+              <div style={{ display:'flex', gap:8, alignItems:'center', marginBottom:10 }}>
+                <select value={buyerTypeSelect} onChange={e=>{e.stopPropagation(); setBuyerTypeSelect(e.target.value)}} onClick={e=>e.stopPropagation()}
+                  style={{ ...s.input, width:'auto', flexShrink:0, color: buyerTypeSelect ? '#ccc' : '#555' }}>
+                  <option value=''>All types</option>
+                  <option value='PE'>PE</option>
+                  <option value='Strategic'>Strategic</option>
+                  <option value='Family Office'>Family Office</option>
+                  <option value='Growth Equity'>Growth Equity</option>
+                </select>
+                <button onClick={e=>{e.stopPropagation(); loadBuyers()}} disabled={buyerLoading}
+                  style={{ flexShrink:0, padding:'7px 14px', borderRadius:6, border:'none', background:'rgba(123,199,94,0.15)', color:c.green, cursor:'pointer', fontSize:12, fontWeight:600, fontFamily:'inherit', border:`0.5px solid rgba(123,199,94,0.3)` }}>
+                  {buyerLoading ? 'Searching…' : buyers.length ? '↺ Refresh' : '✦ Find Buyers'}
                 </button>
               </div>
-              {!buyers && !buyerLoading && <div style={{ color:c.text3, fontSize:12 }}>Select buyer types and click "Find Buyers".</div>}
-              {buyerLoading && <div style={{ color:c.text3, fontSize:12 }}>Identifying potential acquirers…</div>}
-              {buyers && buyers.map((b, i) => {
+              {buyers.length > 0 && (
+                <input value={buyerSearch} onChange={e=>setBuyerSearch(e.target.value)} placeholder="Search buyers…"
+                  style={{ ...s.input, marginBottom:10 }} />
+              )}
+              {!buyers.length && !buyerLoading && <div style={{ color:c.text3, fontSize:12 }}>Click "Find Buyers" to identify potential acquirers.</div>}
+              {buyerLoading && <div style={{ color:c.text3, fontSize:12 }}>Analyzing deal profile and identifying buyers…</div>}
+              {buyers
+                .filter(b => !buyerSearch || b.name?.toLowerCase().includes(buyerSearch.toLowerCase()) || b.thesis?.toLowerCase().includes(buyerSearch.toLowerCase()))
+                .map((b, i) => {
                 const isTracked = trackedBuyers.some(tb => tb.name?.toLowerCase() === b.name?.toLowerCase())
                 return (
                   <div key={i} style={{ padding:'10px 12px', background:'#141414', border:'0.5px solid rgba(255,255,255,0.07)', borderRadius:8, marginBottom:6 }}>
