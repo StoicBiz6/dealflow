@@ -1,31 +1,77 @@
-﻿import { kpi, pill, panel, table, c } from '../../components/sell-side/ssStyles'
-const MANDATES = [
-  { name: 'Project Falcon', sector: 'Healthcare SaaS', ev: '$180-220M', stage: 'First round bids', sc: 'amber', days: 74 },
-  { name: 'Project Summit', sector: 'Industrial tech',  ev: '$90-120M',  stage: 'NDA / CIM',        sc: 'blue',  days: 112 },
-  { name: 'Project Nova',   sector: 'Fintech',          ev: '$250-300M', stage: 'Exclusivity',       sc: 'green', days: 18 },
-  { name: 'Project Ember',  sector: 'Energy services',  ev: '$60-80M',   stage: 'Prep phase',        sc: 'gray',  days: 149 },
-]
+import { useMandateContext } from '../../components/sell-side/SellShell'
+import { useNavigate } from 'react-router-dom'
+import { kpi, pill, panel, table, c } from '../../components/sell-side/ssStyles'
+
+const STAGE_COLOR = {
+  'Prep phase': 'gray', 'NDA / CIM': 'blue', 'Mgmt meetings': 'blue',
+  'First round bids': 'amber', 'Final round': 'amber', 'Exclusivity': 'green', 'Sign & close': 'green',
+}
+
+function fmtEV(m) {
+  if (m.ev_low && m.ev_high) return `$${m.ev_low}-${m.ev_high}M`
+  if (m.ev_low) return `$${m.ev_low}M+`
+  if (m.ev_high) return `up to $${m.ev_high}M`
+  return '—'
+}
+
 export default function SSDashboard() {
+  const { mandates, loading, deleteMandate, setActiveMandateId } = useMandateContext()
+  const navigate = useNavigate()
+
+  const totalEV = mandates.reduce((s, m) => s + ((m.ev_low || 0) + (m.ev_high || 0)) / 2, 0)
+  const inExclusivity = mandates.filter(m => m.stage === 'Exclusivity' || m.stage === 'Sign & close').length
+  const active = mandates.filter(m => m.stage !== 'Sign & close').length
+
+  if (loading) return <div style={{color:c.text3,fontSize:13}}>Loading...</div>
+
   return (
     <div style={{display:'flex',flexDirection:'column',gap:14}}>
-      <div style={{display:'grid',gridTemplateColumns:'repeat(5,minmax(0,1fr))',gap:10}}>
-        {[{label:'Active processes',value:'4',sub:'$680M in play'},{label:'Buyers engaged',value:'87',sub:'across all mandates'},{label:'Bids received',value:'23',sub:'this quarter'},{label:'In exclusivity',value:'1',sub:'Project Nova'},{label:'Avg days to close',value:'118',sub:'last 4 transactions'}].map(k=>(
-          <div key={k.label} style={kpi.card}><div style={kpi.label}>{k.label}</div><div style={kpi.value}>{k.value}</div><div style={kpi.sub}>{k.sub}</div></div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,minmax(0,1fr))',gap:10}}>
+        {[
+          { label:'Active mandates', value: active, sub: `${mandates.length} total` },
+          { label:'Total EV range', value: totalEV ? `~$${Math.round(totalEV)}M` : '—', sub: 'blended midpoint' },
+          { label:'In exclusivity', value: inExclusivity, sub: inExclusivity === 1 ? '1 process' : `${inExclusivity} processes` },
+          { label:'Mandates', value: mandates.length, sub: 'tracked' },
+        ].map(k => (
+          <div key={k.label} style={kpi.card}>
+            <div style={kpi.label}>{k.label}</div>
+            <div style={kpi.value}>{k.value}</div>
+            <div style={kpi.sub}>{k.sub}</div>
+          </div>
         ))}
       </div>
-      <div style={{display:'grid',gridTemplateColumns:'minmax(0,1.6fr) minmax(0,1fr)',gap:14}}>
-        <div style={panel.wrap}>
-          <div style={panel.title}>Active mandates</div>
-          {MANDATES.map(m=>(
-            <div key={m.name} style={{...table.row,gridTemplateColumns:'1fr 80px 120px 64px'}}>
-              <div><div style={table.name}>{m.name}</div><div style={table.sub}>{m.sector}</div></div>
-              <div style={table.mono}>{m.ev}</div>
-              <div><span style={pill(m.sc)}>{m.stage}</span></div>
-              <div style={{...table.mono,color:m.days<30?c.amber:c.text1}}>{m.days}</div>
+
+      <div style={panel.wrap}>
+        <div style={{...panel.title, marginBottom:16}}>Active mandates</div>
+        {mandates.length === 0 ? (
+          <div style={{color:c.text3,fontSize:13}}>No mandates yet — click "+ New Mandate" to get started.</div>
+        ) : (
+          <>
+            <div style={{...table.row, gridTemplateColumns:'1fr 110px 140px 140px 32px', paddingBottom:8, borderBottom:'0.5px solid rgba(255,255,255,0.11)'}}>
+              <span style={table.header}>Name</span>
+              <span style={table.header}>EV range</span>
+              <span style={table.header}>Stage</span>
+              <span style={table.header}>Lead advisor</span>
+              <span/>
             </div>
-          ))}
-        </div>
-        <div style={panel.wrap}><div style={panel.title}>Activity</div></div>
+            {mandates.map(m => (
+              <div key={m.id} style={{...table.row, gridTemplateColumns:'1fr 110px 140px 140px 32px', cursor:'pointer'}}
+                onClick={() => { setActiveMandateId(m.id); navigate('/sell/processes') }}>
+                <div>
+                  <div style={table.name}>{m.name}</div>
+                  {m.sector && <div style={table.sub}>{m.sector}</div>}
+                </div>
+                <div style={table.mono}>{fmtEV(m)}</div>
+                <div><span style={pill(STAGE_COLOR[m.stage] || 'gray')}>{m.stage}</span></div>
+                <div style={{fontSize:12,color:c.text2}}>{m.lead_advisor || '—'}</div>
+                <button
+                  onClick={e => { e.stopPropagation(); if (confirm(`Delete ${m.name}?`)) deleteMandate(m.id) }}
+                  style={{background:'none',border:'none',color:'#444',cursor:'pointer',fontSize:14,padding:'2px 4px'}}
+                >×</button>
+              </div>
+            ))}
+          </>
+        )}
       </div>
     </div>
   )
