@@ -662,6 +662,20 @@ function OverviewTab({ mandate, updateMandate }) {
                 />
               </div>
             ))}
+            <div>
+              <div style={{ fontSize:10, color:'#444', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:5 }}>EV Low ($M)</div>
+              <input type="number" style={s.input} placeholder="—"
+                defaultValue={mandate.ev_low || ''}
+                onBlur={e => { if (e.target.value !== String(mandate.ev_low || '')) updateMandate(mandate.id, { ev_low: e.target.value ? Number(e.target.value) : null }) }}
+              />
+            </div>
+            <div>
+              <div style={{ fontSize:10, color:'#444', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:5 }}>EV High ($M)</div>
+              <input type="number" style={s.input} placeholder="—"
+                defaultValue={mandate.ev_high || ''}
+                onBlur={e => { if (e.target.value !== String(mandate.ev_high || '')) updateMandate(mandate.id, { ev_high: e.target.value ? Number(e.target.value) : null }) }}
+              />
+            </div>
           </div>
         </div>
 
