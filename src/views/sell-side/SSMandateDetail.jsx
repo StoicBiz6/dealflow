@@ -136,6 +136,9 @@ function OverviewTab({ mandate, updateMandate }) {
   const [emailCopied, setEmailCopied] = useState(false)
 
   const summaryTimer = useRef(null)
+  const cimFileRef = useRef(null)
+  const [cimLoading, setCimLoading] = useState(false)
+  const [cimError, setCimError] = useState(null)
 
   // Sync if mandate changes (e.g. after save)
   useEffect(() => {
@@ -156,6 +159,53 @@ function OverviewTab({ mandate, updateMandate }) {
     setSummary(val)
     clearTimeout(summaryTimer.current)
     summaryTimer.current = setTimeout(() => saveNotePatch({ summary: val }), 1000)
+  }
+
+  const handleCIM = (file) => {
+    if (!file || file.type !== 'application/pdf') { setCimError('Please upload a PDF.'); return }
+    setCimLoading(true); setCimError(null)
+    const reader = new FileReader()
+    reader.onload = async (e) => {
+      const base64 = e.target.result.split(',')[1]
+      try {
+        const res = await fetch('/api/sell?action=parse-cim', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ base64, name: file.name }),
+        })
+        const data = await res.json()
+        if (data.error) throw new Error(data.error)
+
+        // Update notes: summary + metrics
+        const newSummary = data.business_summary || summary
+        const newMetrics = {
+          ...metrics,
+          ...(data.revenue     ? { revenue: data.revenue }           : {}),
+          ...(data.ebitda      ? { ebitda: data.ebitda }             : {}),
+          ...(data.ebitda_margin ? { ebitda_margin: data.ebitda_margin } : {}),
+          ...(data.growth_rate ? { growth_rate: data.growth_rate }   : {}),
+        }
+        setSummary(newSummary)
+        setMetrics(newMetrics)
+        saveNotePatch({ summary: newSummary, metrics: newMetrics })
+
+        // Update mandate-level fields if found
+        const mandateUpdates = {}
+        if (data.sector)       mandateUpdates.sector      = data.sector
+        if (data.ev_low)       mandateUpdates.ev_low      = Math.round(data.ev_low / 1e6)
+        if (data.ev_high)      mandateUpdates.ev_high     = Math.round(data.ev_high / 1e6)
+        if (data.stage)        mandateUpdates.stage       = data.stage
+        if (data.lead_advisor) mandateUpdates.lead_advisor = data.lead_advisor
+        if (Object.keys(mandateUpdates).length) updateMandate(mandate.id, mandateUpdates)
+
+        // Populate contacts if returned and none exist yet
+        if (data.contacts?.length && contacts.length === 0) {
+          setContacts(data.contacts)
+          updateMandate(mandate.id, { contacts: data.contacts })
+        }
+      } catch (err) { setCimError(err.message) }
+      setCimLoading(false)
+    }
+    reader.readAsDataURL(file)
   }
 
   // Activity
@@ -315,13 +365,27 @@ function OverviewTab({ mandate, updateMandate }) {
       <div>
         {/* Business summary */}
         <div style={s.card}>
-          <span style={s.label}>Business Summary & Notes</span>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
+            <span style={{ ...s.label, marginBottom:0 }}>Business Summary & Notes</span>
+            <button onClick={() => cimFileRef.current?.click()} disabled={cimLoading}
+              style={{ fontSize:11, padding:'4px 10px', borderRadius:6, border:'0.5px solid rgba(255,255,255,0.11)', background:'transparent', color: cimLoading ? c.text3 : c.text2, cursor:'pointer', fontFamily:'inherit', whiteSpace:'nowrap' }}>
+              {cimLoading ? '⏳ Parsing…' : '📄 Upload CIM'}
+            </button>
+          </div>
+          <input ref={cimFileRef} type="file" accept="application/pdf" style={{ display:'none' }}
+            onChange={e => { handleCIM(e.target.files[0]); e.target.value = '' }} />
+          {cimError && <div style={{ fontSize:11, color:'#f87171', marginBottom:8 }}>{cimError}</div>}
+          <div
+            onDragOver={e => e.preventDefault()}
+            onDrop={e => { e.preventDefault(); handleCIM(e.dataTransfer.files[0]) }}
+          >
           <textarea
             style={{ ...s.input, minHeight:140, resize:'vertical', lineHeight:1.7 }}
-            placeholder="Write your mandate summary, process notes, key observations, risks..."
+            placeholder="Write your mandate summary, or upload a CIM to auto-fill..."
             value={summary}
             onChange={e => handleSummaryChange(e.target.value)}
           />
+          </div>
         </div>
 
         {/* Activity log */}
