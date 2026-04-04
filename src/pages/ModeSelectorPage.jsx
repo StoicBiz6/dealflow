@@ -11,7 +11,7 @@ export default function ModeSelectorPage() {
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
   function proceed() {
     if (!selected) return
-    navigate(selected === 'raise' ? '/' : '/sell/dashboard')
+    navigate(selected === 'raise' ? '/raise' : '/sell/dashboard')
   }
   return (
     <div style={{minHeight:'100vh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'3rem 1.5rem',background:'#0f0f0f'}}>
