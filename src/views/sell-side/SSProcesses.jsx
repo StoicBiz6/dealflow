@@ -115,8 +115,8 @@ function MandateCard({ mandate, onDragStart, onDragEnd, onClick, onStage }) {
         position: 'relative',
         transition: 'border-color 0.15s',
       }}
-      onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'}
-      onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'}
+      onMouseEnter={e => e.currentTarget.style.border = '0.5px solid rgba(255,255,255,0.15)'}
+      onMouseLeave={e => e.currentTarget.style.border = '0.5px solid rgba(255,255,255,0.08)'}
     >
       <div style={{ fontSize: 13, fontWeight: 600, color: '#f0f0f0', marginBottom: 5 }}>{mandate.name}</div>
 
