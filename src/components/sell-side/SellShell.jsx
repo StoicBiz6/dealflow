@@ -10,7 +10,6 @@ const NAV = [
   { group: 'Overview', items: [{ id: 'dashboard', label: 'Dashboard', path: '/sell/dashboard' }] },
   { group: 'Processes', items: [
     { id: 'processes', label: 'Active Processes', path: '/sell/processes' },
-    { id: 'buyers', label: 'Buyer Universe', path: '/sell/buyers' },
   ]},
 ]
 
