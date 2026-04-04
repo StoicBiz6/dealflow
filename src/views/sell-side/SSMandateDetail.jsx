@@ -114,6 +114,25 @@ function OverviewTab({ mandate, updateMandate }) {
   const [news, setNews] = useState(null)
   const [newsLoading, setNewsLoading] = useState(false)
   const [newsCollapsed, setNewsCollapsed] = useState(false)
+
+  // Valuation & Comps
+  const [valuation, setValuation] = useState(null)
+  const [valLoading, setValLoading] = useState(false)
+  const [valCollapsed, setValCollapsed] = useState(false)
+
+  // Buyer Universe
+  const [buyers, setBuyers] = useState(null)
+  const [buyerLoading, setBuyerLoading] = useState(false)
+  const [buyerCollapsed, setBuyerCollapsed] = useState(false)
+  const [buyerTypes, setBuyerTypes] = useState(['PE', 'Strategic', 'Family Office', 'Growth Equity'])
+  const { buyers: trackedBuyers, addBuyer } = useBuyers(mandate.id)
+
+  // Email generator
+  const [emailBuyer, setEmailBuyer] = useState('')
+  const [emailResult, setEmailResult] = useState(null)
+  const [emailLoading, setEmailLoading] = useState(false)
+  const [emailCopied, setEmailCopied] = useState(false)
+
   const summaryTimer = useRef(null)
 
   // Sync if mandate changes (e.g. after save)
@@ -208,6 +227,79 @@ function OverviewTab({ mandate, updateMandate }) {
       if (!data.error) setNews(data)
     } catch {}
     setNewsLoading(false)
+  }
+
+  // Valuation & Comps
+  const loadValuation = async () => {
+    setValLoading(true)
+    try {
+      const res = await fetch('/api/sell?action=valuation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mandate: {
+          name: mandate.name,
+          sector: mandate.sector,
+          stage: mandate.stage,
+          ev_low: mandate.ev_low,
+          ev_high: mandate.ev_high,
+          summary,
+        }}),
+      })
+      const data = await res.json()
+      if (!data.error) setValuation(data)
+    } catch {}
+    setValLoading(false)
+  }
+
+  // Buyer Universe
+  const toggleBuyerType = (t) => setBuyerTypes(prev => prev.includes(t) ? prev.filter(x=>x!==t) : [...prev, t])
+  const loadBuyers = async () => {
+    setBuyerLoading(true)
+    try {
+      const res = await fetch('/api/find-buyers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deal: {
+          company_name: mandate.name,
+          sector: mandate.sector,
+          stage: mandate.stage,
+          valuation: mandate.ev_low ? mandate.ev_low * 1e6 : null,
+          notes: summary,
+        }, types: buyerTypes }),
+      })
+      const data = await res.json()
+      if (!data.error) setBuyers(Array.isArray(data) ? data : data.buyers || [])
+    } catch {}
+    setBuyerLoading(false)
+  }
+
+  // Email generator
+  const generateEmail = async () => {
+    if (!emailBuyer.trim()) return
+    setEmailLoading(true); setEmailResult(null)
+    try {
+      const res = await fetch('/api/sell?action=email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mandate: {
+          name: mandate.name,
+          sector: mandate.sector,
+          ev_low: mandate.ev_low,
+          ev_high: mandate.ev_high,
+          stage: mandate.stage,
+          lead_advisor: mandate.lead_advisor,
+          summary,
+        }, buyer_name: emailBuyer }),
+      })
+      const data = await res.json()
+      if (!data.error) setEmailResult(data)
+    } catch {}
+    setEmailLoading(false)
+  }
+  const copyEmail = () => {
+    if (!emailResult) return
+    navigator.clipboard.writeText(`Subject: ${emailResult.subject}\n\n${emailResult.body}`)
+    setEmailCopied(true); setTimeout(() => setEmailCopied(false), 2000)
   }
 
   return (
@@ -329,6 +421,143 @@ function OverviewTab({ mandate, updateMandate }) {
             </div>
           )}
         </div>
+        {/* Valuation & Comps */}
+        <div style={s.card}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', cursor:'pointer', marginBottom: valCollapsed ? 0 : 14 }}
+            onClick={() => setValCollapsed(x=>!x)}>
+            <div>
+              <span style={s.label}>Valuation & Comps</span>
+              {!valCollapsed && <div style={{ color:'#444', fontSize:11, marginTop:-8, marginBottom:4 }}>AI-driven EV analysis · Sponsor ranges · Comparable transactions</div>}
+            </div>
+            <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+              {!valCollapsed && (
+                <button onClick={e=>{e.stopPropagation(); loadValuation()}} disabled={valLoading}
+                  style={{ padding:'4px 12px', borderRadius:6, border:'0.5px solid rgba(255,255,255,0.11)', background:'transparent', color:c.text2, cursor:'pointer', fontSize:11, fontFamily:'inherit' }}>
+                  {valLoading ? 'Loading…' : valuation ? '↺ Refresh' : '✦ Run Analysis'}
+                </button>
+              )}
+              <span style={{ color:'#333', fontSize:12 }}>{valCollapsed ? '▸' : '▾'}</span>
+            </div>
+          </div>
+          {!valCollapsed && !valLoading && !valuation && (
+            <div style={{ color:c.text3, fontSize:12 }}>Click "Run Analysis" to generate valuation guidance and comparable transactions.</div>
+          )}
+          {valLoading && <div style={{ color:c.text3, fontSize:12 }}>Generating valuation analysis…</div>}
+          {!valCollapsed && valuation && (
+            <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+              {/* EV summary */}
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8 }}>
+                {[
+                  { label:'EV Low', value: valuation.ev_low ? fmt(valuation.ev_low) : '—' },
+                  { label:'EV Mid', value: valuation.ev_mid ? fmt(valuation.ev_mid) : '—' },
+                  { label:'EV High', value: valuation.ev_high ? fmt(valuation.ev_high) : '—' },
+                ].map(kv => (
+                  <div key={kv.label} style={{ background:'#141414', border:'0.5px solid rgba(255,255,255,0.07)', borderRadius:8, padding:'10px 12px' }}>
+                    <div style={{ fontSize:9, color:'#444', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:4 }}>{kv.label}</div>
+                    <div style={{ fontSize:15, fontWeight:600, color:c.green, fontFamily:'DM Mono,monospace' }}>{kv.value}</div>
+                  </div>
+                ))}
+              </div>
+              {valuation.sponsor_range && (
+                <div style={{ fontSize:12, color:c.text2 }}>Sponsor range: <span style={{ color:c.text1, fontWeight:500 }}>{valuation.sponsor_range}</span></div>
+              )}
+              {valuation.strategic_premium && (
+                <div style={{ fontSize:12, color:c.text2 }}>Strategic premium: <span style={{ color:c.text1, fontWeight:500 }}>{valuation.strategic_premium}</span></div>
+              )}
+              {valuation.key_drivers?.length > 0 && (
+                <div>
+                  <div style={{ fontSize:10, color:'#444', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:6 }}>Key Value Drivers</div>
+                  {valuation.key_drivers.map((d,i) => (
+                    <div key={i} style={{ fontSize:12, color:c.text2, padding:'3px 0', borderBottom:'0.5px solid rgba(255,255,255,0.05)' }}>· {d}</div>
+                  ))}
+                </div>
+              )}
+              {valuation.risks?.length > 0 && (
+                <div>
+                  <div style={{ fontSize:10, color:'#444', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:6 }}>Key Risks</div>
+                  {valuation.risks.map((r,i) => (
+                    <div key={i} style={{ fontSize:12, color:'#f87171', padding:'3px 0', borderBottom:'0.5px solid rgba(255,255,255,0.05)' }}>· {r}</div>
+                  ))}
+                </div>
+              )}
+              {valuation.comps?.length > 0 && (
+                <div>
+                  <div style={{ fontSize:10, color:'#444', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:6 }}>Comparable Transactions</div>
+                  {valuation.comps.map((co,i) => (
+                    <div key={i} style={{ padding:'8px 10px', background:'#141414', border:'0.5px solid rgba(255,255,255,0.07)', borderRadius:6, marginBottom:5 }}>
+                      <div style={{ display:'flex', justifyContent:'space-between', marginBottom:3 }}>
+                        <span style={{ fontSize:12, fontWeight:500, color:'#f0f0f0' }}>{co.company || co.name}</span>
+                        <span style={{ fontSize:11, color:c.green, fontFamily:'DM Mono,monospace' }}>{co.ev || co.amount || co.multiple}</span>
+                      </div>
+                      {co.detail && <div style={{ fontSize:11, color:c.text3 }}>{co.detail}</div>}
+                    </div>
+                  ))}
+                </div>
+              )}
+              {valuation.rationale && (
+                <div style={{ fontSize:12, color:c.text2, lineHeight:1.6, padding:'10px 12px', background:'#141414', borderRadius:8, border:'0.5px solid rgba(255,255,255,0.07)' }}>{valuation.rationale}</div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Buyer Universe */}
+        <div style={s.card}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', cursor:'pointer', marginBottom: buyerCollapsed ? 0 : 14 }}
+            onClick={() => setBuyerCollapsed(x=>!x)}>
+            <div>
+              <span style={s.label}>Buyer Universe</span>
+              {!buyerCollapsed && <div style={{ color:'#444', fontSize:11, marginTop:-8, marginBottom:4 }}>AI-suggested acquirers by type</div>}
+            </div>
+            <span style={{ color:'#333', fontSize:12 }}>{buyerCollapsed ? '▸' : '▾'}</span>
+          </div>
+          {!buyerCollapsed && (
+            <>
+              {/* Type filter */}
+              <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:10 }}>
+                {['PE', 'Strategic', 'Family Office', 'Growth Equity'].map(t => (
+                  <button key={t} onClick={e=>{e.stopPropagation(); toggleBuyerType(t)}}
+                    style={{ fontSize:10, padding:'3px 10px', borderRadius:99, border:`0.5px solid ${buyerTypes.includes(t) ? 'rgba(123,199,94,0.4)' : 'rgba(255,255,255,0.1)'}`, background: buyerTypes.includes(t) ? 'rgba(123,199,94,0.12)' : 'transparent', color: buyerTypes.includes(t) ? c.green : c.text3, cursor:'pointer', fontFamily:'inherit' }}>
+                    {t}
+                  </button>
+                ))}
+                <button onClick={e=>{e.stopPropagation(); loadBuyers()}} disabled={buyerLoading || buyerTypes.length === 0}
+                  style={{ fontSize:10, padding:'3px 12px', borderRadius:99, border:'0.5px solid rgba(255,255,255,0.11)', background:'transparent', color:c.text2, cursor:'pointer', fontFamily:'inherit', marginLeft:'auto' }}>
+                  {buyerLoading ? 'Loading…' : buyers ? '↺ Refresh' : '✦ Find Buyers'}
+                </button>
+              </div>
+              {!buyers && !buyerLoading && <div style={{ color:c.text3, fontSize:12 }}>Select buyer types and click "Find Buyers".</div>}
+              {buyerLoading && <div style={{ color:c.text3, fontSize:12 }}>Identifying potential acquirers…</div>}
+              {buyers && buyers.map((b, i) => {
+                const isTracked = trackedBuyers.some(tb => tb.name?.toLowerCase() === b.name?.toLowerCase())
+                return (
+                  <div key={i} style={{ padding:'10px 12px', background:'#141414', border:'0.5px solid rgba(255,255,255,0.07)', borderRadius:8, marginBottom:6 }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:4 }}>
+                      <div>
+                        <span style={{ fontSize:12, fontWeight:600, color:'#f0f0f0' }}>{b.name}</span>
+                        <span style={{ fontSize:10, color:c.blue, border:'0.5px solid rgba(126,166,224,0.2)', borderRadius:4, padding:'1px 6px', marginLeft:6 }}>{b.type}</span>
+                      </div>
+                      {isTracked ? (
+                        <span style={{ fontSize:10, color:c.green }}>✓ Tracked</span>
+                      ) : (
+                        <button onClick={() => addBuyer({ name:b.name, type:b.type, status:'Identified', nda:false, mgmt_meeting:false })}
+                          style={{ fontSize:10, padding:'3px 8px', borderRadius:5, border:`0.5px solid rgba(123,199,94,0.3)`, background:'rgba(123,199,94,0.08)', color:c.green, cursor:'pointer', fontFamily:'inherit' }}>
+                          + Track
+                        </button>
+                      )}
+                    </div>
+                    {b.thesis && <div style={{ fontSize:11, color:c.text2, lineHeight:1.5, marginBottom:4 }}>{b.thesis}</div>}
+                    <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
+                      {b.contact_name && <span style={{ fontSize:10, color:c.text3 }}>Contact: {b.contact_name}</span>}
+                      {b.email && <a href={`mailto:${b.email}`} style={{ fontSize:10, color:c.blue, textDecoration:'none' }}>{b.email}</a>}
+                      {b.website && <a href={b.website} target="_blank" rel="noopener noreferrer" style={{ fontSize:10, color:c.text3, textDecoration:'none' }}>↗ Website</a>}
+                    </div>
+                  </div>
+                )
+              })}
+            </>
+          )}
+        </div>
       </div>
 
       {/* ── Right sidebar ── */}
@@ -429,6 +658,46 @@ function OverviewTab({ mandate, updateMandate }) {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Email Generator */}
+        <div style={s.card}>
+          <span style={s.label}>Outreach Email</span>
+          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+            <div>
+              <div style={{ fontSize:10, color:'#444', marginBottom:4 }}>Buyer / Recipient</div>
+              {trackedBuyers.length > 0 ? (
+                <select value={emailBuyer} onChange={e=>setEmailBuyer(e.target.value)} style={s.input}>
+                  <option value=''>Select a tracked buyer…</option>
+                  {trackedBuyers.map((b,i) => <option key={i} value={b.name}>{b.name}</option>)}
+                  <option value='__custom'>Other (type below)</option>
+                </select>
+              ) : null}
+              {(emailBuyer === '__custom' || trackedBuyers.length === 0) && (
+                <input value={emailBuyer === '__custom' ? '' : emailBuyer}
+                  onChange={e => setEmailBuyer(e.target.value)}
+                  placeholder="Enter buyer / fund name"
+                  style={{ ...s.input, marginTop: trackedBuyers.length > 0 ? 6 : 0 }} />
+              )}
+            </div>
+            <button onClick={generateEmail} disabled={emailLoading || !emailBuyer.trim() || emailBuyer === '__custom'}
+              style={{ padding:'7px 14px', borderRadius:6, border:'none', background:c.green, color:'#0f0f0f', cursor:'pointer', fontSize:12, fontWeight:600, fontFamily:'inherit', opacity: (!emailBuyer.trim() || emailBuyer==='__custom') ? 0.4 : 1 }}>
+              {emailLoading ? 'Generating…' : '✦ Generate Email'}
+            </button>
+            {emailResult && (
+              <div style={{ background:'#141414', border:'0.5px solid rgba(255,255,255,0.07)', borderRadius:8, padding:12 }}>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
+                  <div style={{ fontSize:10, color:'#444', textTransform:'uppercase', letterSpacing:'0.07em' }}>Generated Email</div>
+                  <button onClick={copyEmail}
+                    style={{ fontSize:10, padding:'3px 8px', borderRadius:5, border:`0.5px solid rgba(255,255,255,0.11)`, background:'transparent', color: emailCopied ? c.green : c.text2, cursor:'pointer', fontFamily:'inherit' }}>
+                    {emailCopied ? '✓ Copied' : '↗ Copy'}
+                  </button>
+                </div>
+                <div style={{ fontSize:11, fontWeight:600, color:c.text1, marginBottom:6 }}>Subject: {emailResult.subject}</div>
+                <div style={{ fontSize:11, color:c.text2, lineHeight:1.7, whiteSpace:'pre-wrap' }}>{emailResult.body}</div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -1,8 +1,7 @@
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useState, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useUser, UserButton } from '@clerk/clerk-react'
 import { useMandates } from '../../hooks/useSellSide'
-import SellSidePanel from './SellSidePanel'
 
 export const MandateContext = createContext(null)
 export const useMandateContext = () => useContext(MandateContext)
@@ -101,7 +100,6 @@ export default function SellShell({ children }) {
         </div>
       </div>
 
-      <SellSidePanel />
       {showNewMandate && <MandateModal onClose={() => setShowNewMandate(false)} onSave={async (data) => { await addMandate(data); setShowNewMandate(false) }} />}
     </MandateContext.Provider>
   )
@@ -133,7 +131,35 @@ const STAGES = ['Prep phase', 'NDA / CIM', 'Mgmt meetings', 'First round bids', 
 function MandateModal({ onClose, onSave, initial = {} }) {
   const [form, setForm] = useState({ name: '', sector: '', ev_low: '', ev_high: '', stage: 'Prep phase', lead_advisor: '', ...initial })
   const [saving, setSaving] = useState(false)
+  const [cimLoading, setCimLoading] = useState(false)
+  const [cimError, setCimError] = useState(null)
+  const fileRef = useRef()
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  const handleCIM = async (file) => {
+    if (!file || file.type !== 'application/pdf') { setCimError('Please upload a PDF.'); return }
+    setCimLoading(true); setCimError(null)
+    const reader = new FileReader()
+    reader.onload = async (e) => {
+      const base64 = e.target.result.split(',')[1]
+      try {
+        const res = await fetch('/api/sell?action=parse-cim', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ base64, name: file.name }) })
+        const data = await res.json()
+        if (data.error) throw new Error(data.error)
+        setForm(f => ({
+          ...f,
+          name: data.name || f.name,
+          sector: data.sector || f.sector,
+          ev_low: data.ev_low ? String(Math.round(data.ev_low / 1e6)) : f.ev_low,
+          ev_high: data.ev_high ? String(Math.round(data.ev_high / 1e6)) : f.ev_high,
+          stage: data.stage || f.stage,
+          lead_advisor: data.lead_advisor || f.lead_advisor,
+        }))
+      } catch (err) { setCimError(err.message) }
+      setCimLoading(false)
+    }
+    reader.readAsDataURL(file)
+  }
 
   const handleSave = async () => {
     if (!form.name.trim()) return
@@ -146,6 +172,18 @@ function MandateModal({ onClose, onSave, initial = {} }) {
     <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:100}} onClick={onClose}>
       <div style={{background:'#141414',border:'0.5px solid rgba(255,255,255,0.11)',borderRadius:12,padding:28,width:440,display:'flex',flexDirection:'column',gap:16}} onClick={e=>e.stopPropagation()}>
         <div style={{fontSize:15,fontWeight:500,color:'#f0f0f0'}}>New Mandate</div>
+
+        {/* CIM upload */}
+        <div
+          onClick={() => !cimLoading && fileRef.current?.click()}
+          onDragOver={e => e.preventDefault()}
+          onDrop={e => { e.preventDefault(); handleCIM(e.dataTransfer.files[0]) }}
+          style={{border:'1px dashed rgba(255,255,255,0.13)',borderRadius:8,padding:'12px 16px',textAlign:'center',cursor:'pointer',color:'#555',fontSize:12,background:'#111'}}>
+          {cimLoading ? '⏳ Parsing CIM…' : '📄 Drop CIM PDF here to auto-fill fields'}
+        </div>
+        <input ref={fileRef} type="file" accept="application/pdf" style={{display:'none'}} onChange={e=>handleCIM(e.target.files[0])} />
+        {cimError && <div style={{fontSize:11,color:'#f87171'}}>{cimError}</div>}
+
         {[
           { label: 'Project name', key: 'name', placeholder: 'e.g. Project Falcon' },
           { label: 'Sector', key: 'sector', placeholder: 'e.g. Healthcare SaaS' },
@@ -178,7 +216,7 @@ function MandateModal({ onClose, onSave, initial = {} }) {
         </div>
         <div style={{display:'flex',gap:8,justifyContent:'flex-end',marginTop:4}}>
           <button onClick={onClose} style={{padding:'7px 16px',borderRadius:6,border:'0.5px solid rgba(255,255,255,0.11)',background:'transparent',color:'#888',cursor:'pointer',fontSize:13,fontFamily:'inherit'}}>Cancel</button>
-          <button onClick={handleSave} disabled={saving} style={{padding:'7px 16px',borderRadius:6,border:'none',background:'#7bc75e',color:'#0f0f0f',cursor:'pointer',fontSize:13,fontWeight:600,fontFamily:'inherit'}}>
+          <button onClick={handleSave} disabled={saving||cimLoading} style={{padding:'7px 16px',borderRadius:6,border:'none',background:'#7bc75e',color:'#0f0f0f',cursor:'pointer',fontSize:13,fontWeight:600,fontFamily:'inherit'}}>
             {saving ? 'Saving...' : 'Create'}
           </button>
         </div>
