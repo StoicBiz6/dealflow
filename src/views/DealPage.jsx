@@ -1772,6 +1772,14 @@ export default function DealPage() {
             {shareInviteStatus?.error && (
               <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', padding: '8px 12px', marginBottom: '10px', color: '#f87171', fontSize: '11px' }}>
                 ✕ Email not sent: {shareInviteStatus.error}
+                {shareInviteStatus.error.includes('Calendar button') && (
+                  <div style={{ marginTop: 6 }}>
+                    <button onClick={() => { window.location.href = `/api/google-calendar?userId=${user?.id}&returnTo=/deal/${id}` }}
+                      style={{ fontSize: 11, padding: '4px 10px', borderRadius: 5, border: '1px solid rgba(239,68,68,0.4)', background: 'rgba(239,68,68,0.1)', color: '#f87171', cursor: 'pointer', fontFamily: 'inherit' }}>
+                      Connect Google →
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
