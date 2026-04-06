@@ -324,6 +324,7 @@ function EditDealModal({
     raise_amount: deal.raise_amount ? String(deal.raise_amount) : "",
     valuation: deal.valuation ? String(deal.valuation) : "",
     fee_pct: deal.fee_pct ? String(deal.fee_pct) : "",
+    monthly_retainer: deal.monthly_retainer ? String(deal.monthly_retainer) : "",
     deal_owner: deal.deal_owner ?? "",
     website: deal.website ?? "",
     expected_close_date: deal.expected_close_date ?? "",
@@ -339,6 +340,7 @@ function EditDealModal({
         raise_amount: deal.raise_amount ? String(deal.raise_amount) : "",
         valuation: deal.valuation ? String(deal.valuation) : "",
         fee_pct: deal.fee_pct ? String(deal.fee_pct) : "",
+        monthly_retainer: deal.monthly_retainer ? String(deal.monthly_retainer) : "",
         deal_owner: deal.deal_owner ?? "",
         website: deal.website ?? "",
         expected_close_date: deal.expected_close_date ?? "",
@@ -372,6 +374,7 @@ function EditDealModal({
           : undefined,
         valuation: form.valuation ? parseFloat(form.valuation) : undefined,
         fee_pct: form.fee_pct ? parseFloat(form.fee_pct) : undefined,
+        monthly_retainer: form.monthly_retainer ? parseFloat(form.monthly_retainer) : undefined,
         deal_owner: form.deal_owner || undefined,
         website: form.website || undefined,
         expected_close_date: form.expected_close_date || undefined,
@@ -442,10 +445,17 @@ function EditDealModal({
             keyboardType="decimal-pad"
           />
           <EditField
-            label="Fee %"
+            label="Success Fee %"
             value={form.fee_pct}
             onChangeText={(v) => setForm((f) => ({ ...f, fee_pct: v }))}
             placeholder="e.g. 2"
+            keyboardType="decimal-pad"
+          />
+          <EditField
+            label="Monthly Retainer ($)"
+            value={form.monthly_retainer}
+            onChangeText={(v) => setForm((f) => ({ ...f, monthly_retainer: v }))}
+            placeholder="e.g. 10000"
             keyboardType="decimal-pad"
           />
           <EditField
@@ -599,7 +609,7 @@ function OverviewTab({
           value={deal.fee_pct ? `${deal.fee_pct}%` : "2%"}
         />
         <InfoRow
-          label="Est. Fee"
+          label="Est. Success Fee"
           value={
             deal.raise_amount
               ? formatCurrency(
@@ -609,6 +619,13 @@ function OverviewTab({
           }
           green
         />
+        {deal.monthly_retainer ? (
+          <InfoRow
+            label="Monthly Retainer"
+            value={formatCurrency(deal.monthly_retainer) + "/mo"}
+            green
+          />
+        ) : null}
         <InfoRow label="Deal Owner" value={deal.deal_owner || "—"} />
         <InfoRow
           label="Expected Close"

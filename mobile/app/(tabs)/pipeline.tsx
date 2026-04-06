@@ -180,6 +180,7 @@ function AddDealModal({
   const [raiseStr, setRaiseStr] = useState("");
   const [valStr, setValStr] = useState("");
   const [feeStr, setFeeStr] = useState("2");
+  const [retainerStr, setRetainerStr] = useState("");
   const [owner, setOwner] = useState("");
   const [saving, setSaving] = useState(false);
   const insets = useSafeAreaInsets();
@@ -196,6 +197,7 @@ function AddDealModal({
     setRaiseStr("");
     setValStr("");
     setFeeStr("2");
+    setRetainerStr("");
     setOwner("");
   };
 
@@ -213,6 +215,7 @@ function AddDealModal({
         raise_amount: parseMoney(raiseStr),
         valuation: parseMoney(valStr),
         fee_pct: parseFloat(feeStr) || 2,
+        monthly_retainer: parseMoney(retainerStr),
         deal_owner: owner.trim() || undefined,
       });
       reset();
@@ -319,7 +322,7 @@ function AddDealModal({
                 </Field>
               </View>
               <View className="flex-1">
-                <Field label="Fee %">
+                <Field label="Success Fee %">
                   <TextInput
                     className="bg-slate-800 text-white rounded-xl px-4 py-3 text-sm"
                     placeholder="2"
@@ -331,6 +334,17 @@ function AddDealModal({
                 </Field>
               </View>
             </View>
+
+            <Field label="Monthly Retainer ($)">
+              <TextInput
+                className="bg-slate-800 text-white rounded-xl px-4 py-3 text-sm"
+                placeholder="e.g. 10000"
+                placeholderTextColor="#475569"
+                value={retainerStr}
+                onChangeText={setRetainerStr}
+                keyboardType="numeric"
+              />
+            </Field>
 
             <Field label="Deal Owner">
               <TextInput

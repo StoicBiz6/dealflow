@@ -22,6 +22,7 @@ export default function DashboardView({ deals, onOpenDeal }) {
     .map(d => ({ ...d, projectedFee: Math.round(d.raise_amount * d.fee_pct / 100) }))
     .sort((a, b) => b.projectedFee - a.projectedFee)
   const activeFeeTotal = feeDeals.reduce((s, d) => s + d.projectedFee, 0)
+  const totalRetainer = activeDeals.reduce((s, d) => s + (d.monthly_retainer || 0), 0)
 
   const bySector = {}
   deals.forEach(d => {
@@ -115,11 +116,12 @@ export default function DashboardView({ deals, onOpenDeal }) {
       )}
 
       {/* KPI Row */}
-      <div className="dashboard-grid-kpi" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '24px' }}>
+      <div className="dashboard-grid-kpi" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px', marginBottom: '24px' }}>
         <KPI label="Total Pipeline" value={formatCurrency(totalRaise)} sub={`${deals.length} deals`} />
         <KPI label="Active Deals" value={activeDeals.length} sub="in progress" accent />
         <KPI label="Closed Deals" value={closedDeals.length} sub={formatCurrency(closedDeals.reduce((s,d)=>s+(d.raise_amount||0),0))} />
-        <KPI label="Est. Fees" value={totalFees ? formatCurrency(totalFees) : '—'} sub={dealsWithFees.length ? `across ${dealsWithFees.length} deal${dealsWithFees.length > 1 ? 's' : ''}` : 'set fee % on deals'} fee />
+        <KPI label="Est. Success Fees" value={totalFees ? formatCurrency(totalFees) : '—'} sub={dealsWithFees.length ? `across ${dealsWithFees.length} deal${dealsWithFees.length > 1 ? 's' : ''}` : 'set fee % on deals'} fee />
+        <KPI label="Monthly Retainer" value={totalRetainer ? formatCurrency(totalRetainer) + '/mo' : '—'} sub={totalRetainer ? `${activeDeals.filter(d => d.monthly_retainer).length} deals` : 'set retainer on deals'} fee />
       </div>
 
       {/* Fee Pipeline Projection */}
@@ -164,6 +166,7 @@ export default function DashboardView({ deals, onOpenDeal }) {
                   </div>
                   <span style={{ color: '#555', fontSize: '11px', whiteSpace: 'nowrap' }}>
                     {formatCurrency(deal.raise_amount)} × {deal.fee_pct}%
+                    {deal.monthly_retainer ? ` · ${formatCurrency(deal.monthly_retainer)}/mo` : ''}
                   </span>
                   <span style={{ color: '#9d8fff', fontSize: '12px', fontWeight: 600, minWidth: '70px', textAlign: 'right' }}>
                     {formatCurrency(deal.projectedFee)}

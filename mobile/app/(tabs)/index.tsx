@@ -38,6 +38,7 @@ export default function DashboardScreen() {
       (s, d) => s + (d.raise_amount || 0) * ((d.fee_pct || 2) / 100),
       0
     );
+    const totalRetainer = active.reduce((s, d) => s + (d.monthly_retainer || 0), 0);
     const stale = active.filter(isStale);
     const feePipeline = [...active]
       .filter((d) => d.raise_amount)
@@ -59,6 +60,7 @@ export default function DashboardScreen() {
       closed: closed.length,
       totalRaise,
       totalFees,
+      totalRetainer,
       stale,
       feePipeline,
       byStage,
@@ -137,14 +139,23 @@ export default function DashboardScreen() {
               value={formatCurrency(stats.totalRaise)}
             />
           </View>
-          <View className="flex-row gap-3 mb-6">
+          <View className="flex-row gap-3 mb-3">
             <KPICard
-              label="Est. Fees"
+              label="Est. Success Fees"
               value={formatCurrency(stats.totalFees)}
               accent
             />
             <KPICard label="Closed" value={String(stats.closed)} />
           </View>
+          {stats.totalRetainer > 0 && (
+            <View className="flex-row gap-3 mb-6">
+              <KPICard
+                label="Monthly Retainer"
+                value={formatCurrency(stats.totalRetainer) + "/mo"}
+                accent
+              />
+            </View>
+          )}
 
           {/* Stale Deals Alert */}
           {stats.stale.length > 0 && (
@@ -202,9 +213,16 @@ export default function DashboardScreen() {
                         </Text>
                       </View>
                     </View>
-                    <Text className="text-green-400 font-semibold">
-                      {formatCurrency(fee)}
-                    </Text>
+                    <View className="items-end">
+                      <Text className="text-green-400 font-semibold">
+                        {formatCurrency(fee)}
+                      </Text>
+                      {deal.monthly_retainer ? (
+                        <Text className="text-blue-400 text-xs">
+                          +{formatCurrency(deal.monthly_retainer)}/mo
+                        </Text>
+                      ) : null}
+                    </View>
                   </TouchableOpacity>
                 );
               })}

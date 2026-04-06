@@ -76,6 +76,7 @@ export interface Deal {
   raise_amount?: number;
   valuation?: number;
   fee_pct?: number;
+  monthly_retainer?: number;
   deal_owner?: string;
   website?: string;
   notes?: string;

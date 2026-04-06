@@ -1421,8 +1421,9 @@ export default function DealPage() {
             {[
               { label: 'Raise', value: formatCurrency(deal.raise_amount) },
               { label: 'Valuation', value: formatCurrency(deal.valuation) },
-              deal.fee_pct != null && { label: 'Fee %', value: `${deal.fee_pct}%` },
-              deal.fee_pct != null && deal.raise_amount && { label: 'Est. Fee', value: formatCurrency(deal.raise_amount * deal.fee_pct / 100), highlight: true },
+              deal.fee_pct != null && { label: 'Success Fee %', value: `${deal.fee_pct}%` },
+              deal.fee_pct != null && deal.raise_amount && { label: 'Est. Success Fee', value: formatCurrency(deal.raise_amount * deal.fee_pct / 100), highlight: true },
+              deal.monthly_retainer && { label: 'Monthly Retainer', value: formatCurrency(deal.monthly_retainer) + '/mo', highlight: true },
               { label: 'Sector', value: deal.sector },
               { label: 'Owner', value: deal.deal_owner },
               { label: 'Added', value: formatDate(deal.created_at) },
