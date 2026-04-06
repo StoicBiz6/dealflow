@@ -59,10 +59,11 @@ export default async function handler(req, res) {
       const watermarked = await pdfDoc.save()
 
       res.setHeader('Content-Type', 'application/pdf')
-      // inline = display in browser, not save-dialog
       res.setHeader('Content-Disposition', 'inline; filename="document.pdf"')
-      res.setHeader('Cache-Control', 'no-store, no-cache')
+      res.setHeader('Cache-Control', 'no-store, no-cache, private')
       res.setHeader('X-Content-Type-Options', 'nosniff')
+      res.setHeader('Content-Security-Policy', "default-src 'none'")
+      res.setHeader('X-Frame-Options', 'SAMEORIGIN')
       return res.send(Buffer.from(watermarked))
     }
 
