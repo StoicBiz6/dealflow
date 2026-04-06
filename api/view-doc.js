@@ -30,28 +30,28 @@ export default async function handler(req, res) {
         const { width, height } = page.getSize()
 
         // Tile the email diagonally across the page
-        for (let row = 0; row < height + 200; row += 110) {
-          for (let col = -100; col < width + 100; col += 280) {
+        for (let row = 0; row < height + 200; row += 120) {
+          for (let col = -100; col < width + 100; col += 260) {
             page.drawText(userEmail, {
               x: col,
               y: row,
-              size: 11,
+              size: 12,
               font,
-              color: rgb(0.45, 0.45, 0.45),
-              opacity: 0.13,
+              color: rgb(0.35, 0.35, 0.35),
+              opacity: 0.28,
               rotate: degrees(35),
             })
           }
         }
 
-        // Extra solid watermark in the centre of each page
+        // Bold centre watermark
         page.drawText(userEmail, {
-          x: width / 2 - (userEmail.length * 3.5),
+          x: width / 2 - (userEmail.length * 4),
           y: height / 2,
-          size: 16,
+          size: 18,
           font,
-          color: rgb(0.4, 0.4, 0.4),
-          opacity: 0.18,
+          color: rgb(0.3, 0.3, 0.3),
+          opacity: 0.35,
           rotate: degrees(35),
         })
       }
