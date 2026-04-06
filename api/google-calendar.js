@@ -48,7 +48,7 @@ export default async function handler(req, res) {
       client_id: process.env.GOOGLE_CLIENT_ID,
       redirect_uri: getRedirectUri(),
       response_type: 'code',
-      scope: 'https://www.googleapis.com/auth/calendar.events',
+      scope: 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/gmail.send',
       access_type: 'offline',
       prompt: 'consent',
       state,

@@ -676,7 +676,7 @@ export default function DealPage() {
       const res = await fetch('/api/send-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ to: emailTo.trim(), subject: emailSubject, body: emailBody }),
+        body: JSON.stringify({ to: emailTo.trim(), subject: emailSubject, body: emailBody, userId: user?.id }),
       })
       const data = await res.json()
       if (data.error) {
@@ -812,6 +812,7 @@ export default function DealPage() {
   <hr style="border:none;border-top:1px solid #1f1f1f;margin:24px 0">
   <p style="font-size:11px;color:#333;margin:0">Sent via DealFlow by Stoic Partner</p>
 </div>`,
+            userId: user?.id,
           }),
         })
         const json = await res.json().catch(() => ({}))
