@@ -62,8 +62,6 @@ export default async function handler(req, res) {
       res.setHeader('Content-Disposition', 'inline; filename="document.pdf"')
       res.setHeader('Cache-Control', 'no-store, no-cache, private')
       res.setHeader('X-Content-Type-Options', 'nosniff')
-      res.setHeader('Content-Security-Policy', "default-src 'none'")
-      res.setHeader('X-Frame-Options', 'SAMEORIGIN')
       return res.send(Buffer.from(watermarked))
     }
 
