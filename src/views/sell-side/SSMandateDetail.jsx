@@ -595,7 +595,7 @@ function OverviewTab({ mandate, updateMandate }) {
                   <option value='Growth Equity'>Growth Equity</option>
                 </select>
                 <button onClick={e=>{e.stopPropagation(); loadBuyers()}} disabled={buyerLoading}
-                  style={{ flexShrink:0, padding:'7px 14px', borderRadius:6, border:'none', background:'rgba(123,199,94,0.15)', color:c.green, cursor:'pointer', fontSize:12, fontWeight:600, fontFamily:'inherit', border:`0.5px solid rgba(123,199,94,0.3)` }}>
+                  style={{ flexShrink:0, padding:'7px 14px', borderRadius:6, border:`0.5px solid rgba(123,199,94,0.3)`, background:'rgba(123,199,94,0.15)', color:c.green, cursor:'pointer', fontSize:12, fontWeight:600, fontFamily:'inherit' }}>
                   {buyerLoading ? 'Searching…' : buyers.length ? '↺ Refresh' : '✦ Find Buyers'}
                 </button>
               </div>
