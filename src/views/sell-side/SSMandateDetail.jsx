@@ -677,6 +677,22 @@ function OverviewTab({ mandate, updateMandate }) {
               />
             </div>
           </div>
+          <div style={{ borderTop:'0.5px solid rgba(255,255,255,0.06)', marginTop:12, paddingTop:12, display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+            <div>
+              <div style={{ fontSize:10, color:'#444', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:5 }}>Success Fee</div>
+              <input style={s.input} placeholder="e.g. 2% or $2M"
+                defaultValue={mandate.success_fee || ''}
+                onBlur={e => { if (e.target.value !== (mandate.success_fee || '')) updateMandate(mandate.id, { success_fee: e.target.value || null }) }}
+              />
+            </div>
+            <div>
+              <div style={{ fontSize:10, color:'#444', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:5 }}>Monthly Retainer ($)</div>
+              <input type="number" style={s.input} placeholder="e.g. 15000"
+                defaultValue={mandate.retainer || ''}
+                onBlur={e => { if (e.target.value !== String(mandate.retainer || '')) updateMandate(mandate.id, { retainer: e.target.value ? Number(e.target.value) : null }) }}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Mandate details */}

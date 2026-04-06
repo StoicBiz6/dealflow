@@ -16,6 +16,13 @@ function fmtEV(m) {
   return '—'
 }
 
+function fmtRetainer(n) {
+  if (!n) return '—'
+  if (n >= 1000000) return `$${(n/1000000).toFixed(1)}M/mo`
+  if (n >= 1000) return `$${Math.round(n/1000)}k/mo`
+  return `$${n}/mo`
+}
+
 export default function SSDashboard() {
   const { mandates, loading, deleteMandate, setActiveMandateId } = useMandateContext()
   const navigate = useNavigate()
@@ -23,6 +30,7 @@ export default function SSDashboard() {
   const totalEV = mandates.reduce((s, m) => s + ((m.ev_low || 0) + (m.ev_high || 0)) / 2, 0)
   const inExclusivity = mandates.filter(m => m.stage === 'Exclusivity' || m.stage === 'Sign & close').length
   const active = mandates.filter(m => m.stage !== 'Sign & close').length
+  const totalRetainer = mandates.reduce((s, m) => s + (m.retainer || 0), 0)
 
   if (loading) return <div style={{color:c.text3,fontSize:13}}>Loading...</div>
 
@@ -33,7 +41,7 @@ export default function SSDashboard() {
           { label:'Active mandates', value: active, sub: `${mandates.length} total` },
           { label:'Total EV range', value: totalEV ? `~$${Math.round(totalEV)}M` : '—', sub: 'blended midpoint' },
           { label:'In exclusivity', value: inExclusivity, sub: inExclusivity === 1 ? '1 process' : `${inExclusivity} processes` },
-          { label:'Mandates', value: mandates.length, sub: 'tracked' },
+          { label:'Monthly retainers', value: totalRetainer ? fmtRetainer(totalRetainer) : '—', sub: 'across all mandates' },
         ].map(k => (
           <div key={k.label} style={kpi.card}>
             <div style={kpi.label}>{k.label}</div>
@@ -49,18 +57,20 @@ export default function SSDashboard() {
           <div style={{color:c.text3,fontSize:13}}>No mandates yet — click "+ New Mandate" to get started.</div>
         ) : (
           <>
-            <div style={{...table.row, gridTemplateColumns:'1fr 100px 100px 100px 140px 32px', paddingBottom:8, borderBottom:'0.5px solid rgba(255,255,255,0.11)'}}>
+            <div style={{...table.row, gridTemplateColumns:'1fr 90px 90px 100px 110px 110px 140px 32px', paddingBottom:8, borderBottom:'0.5px solid rgba(255,255,255,0.11)'}}>
               <span style={table.header}>Name</span>
               <span style={table.header}>Revenue</span>
               <span style={table.header}>EBITDA</span>
               <span style={table.header}>EV range</span>
+              <span style={table.header}>Success fee</span>
+              <span style={table.header}>Retainer</span>
               <span style={table.header}>Stage</span>
               <span/>
             </div>
             {mandates.map(m => {
               const mx = parseNotes(m.notes).metrics || {}
               return (
-                <div key={m.id} style={{...table.row, gridTemplateColumns:'1fr 100px 100px 100px 140px 32px', cursor:'pointer'}}
+                <div key={m.id} style={{...table.row, gridTemplateColumns:'1fr 90px 90px 100px 110px 110px 140px 32px', cursor:'pointer'}}
                   onClick={() => { setActiveMandateId(m.id); navigate(`/sell/deal/${m.id}`) }}>
                   <div>
                     <div style={table.name}>{m.name}</div>
@@ -69,6 +79,8 @@ export default function SSDashboard() {
                   <div style={table.mono}>{mx.revenue || '—'}</div>
                   <div style={table.mono}>{mx.ebitda || '—'}</div>
                   <div style={table.mono}>{fmtEV(m)}</div>
+                  <div style={{fontSize:12,color:c.text2}}>{m.success_fee || '—'}</div>
+                  <div style={{fontSize:12,color:c.text2}}>{m.retainer ? fmtRetainer(m.retainer) : '—'}</div>
                   <div><span style={pill(STAGE_COLOR[m.stage] || 'gray')}>{m.stage}</span></div>
                   <button
                     onClick={e => { e.stopPropagation(); if (confirm(`Delete ${m.name}?`)) deleteMandate(m.id) }}
