@@ -218,8 +218,12 @@ export default function DealRoomView() {
                 <span style={sectionLabel}>Documents</span>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   {documents.map((doc, i) => {
-                    const userEmail = user?.emailAddresses?.[0]?.emailAddress || ''
-                    const viewUrl = `/api/view-doc?url=${encodeURIComponent(doc.url)}&email=${encodeURIComponent(userEmail)}`
+                    const viewerEmail = user?.emailAddresses?.[0]?.emailAddress?.toLowerCase() || ''
+                    const sharedEmails = deal.shared_with || []
+                    // Watermark with the INVITED email — the shared_with entry matching this viewer,
+                    // or the first recipient's email if the owner is previewing the deal room.
+                    const watermarkEmail = sharedEmails.find(e => e.toLowerCase() === viewerEmail) || sharedEmails[0] || viewerEmail
+                    const viewUrl = `/api/view-doc?url=${encodeURIComponent(doc.url)}&email=${encodeURIComponent(watermarkEmail)}`
                     return (
                       <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderBottom: i < documents.length - 1 ? '1px solid #1a1a1a' : 'none' }}>
                         <span style={{ fontSize: '16px' }}>{doc.type?.includes('pdf') ? '📄' : doc.type?.includes('image') ? '🖼️' : '📎'}</span>

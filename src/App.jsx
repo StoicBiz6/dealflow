@@ -27,6 +27,23 @@ import { useDeals } from './hooks/useDeals'
 import { useWorkspace } from './hooks/useWorkspace'
 import DealChat from './components/DealChat'
 
+// Shown to unauthenticated visitors of /deal-room/:id — embeds Clerk sign-in and redirects
+// back to the same deal room URL after successful sign-in.
+function DealRoomGate() {
+  const location = useLocation()
+  return (
+    <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '28px', fontFamily: 'DM Mono, monospace', padding: '40px 20px' }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '22px', color: '#f0f0f0', marginBottom: '10px' }}>🔒 Deal Room Access</div>
+        <div style={{ color: '#555', fontSize: '13px', lineHeight: 1.6, maxWidth: '360px' }}>
+          Sign in with the email address you were invited with to view this deal room.
+        </div>
+      </div>
+      <SignIn routing="hash" forceRedirectUrl={location.pathname} />
+    </div>
+  )
+}
+
 function MainView() {
   const [view, setView] = useState('dashboard')
   const [modalDeal, setModalDeal] = useState(null)
@@ -71,6 +88,7 @@ export default function App() {
         <Routes>
           <Route path="/sign-in/*" element={<SignIn routing="path" path="/sign-in" />} />
           <Route path="/sign-up/*" element={<SignUp routing="path" path="/sign-up" />} />
+          <Route path="/deal-room/:id" element={<DealRoomGate />} />
           <Route path="*" element={<LandingPage />} />
         </Routes>
       </SignedOut>
