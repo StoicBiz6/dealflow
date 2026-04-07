@@ -242,6 +242,7 @@ export default function DealPage() {
   const [showShareModal, setShowShareModal] = useState(false)
   const [shareEmailInput, setShareEmailInput] = useState('')
   const [sharedWith, setSharedWith] = useState([])
+  const [sharedDocs, setSharedDocs] = useState(null) // null = all docs; array of URLs = explicit list
   const [shareSaving, setShareSaving] = useState(false)
   const [shareInviteStatus, setShareInviteStatus] = useState(null) // null | 'sending' | 'sent' | { error: string }
   // Google Calendar
@@ -270,6 +271,7 @@ export default function DealPage() {
       setBuyerUniverse(data.buyer_universe || [])
       setComments(data.comments || [])
       setSharedWith(data.shared_with || [])
+      setSharedDocs(data.shared_docs ?? null) // null = all docs visible
       setLoading(false)
       // Check if user has Google Calendar auth
       if (data.user_id) {
@@ -783,6 +785,20 @@ export default function DealPage() {
     }
     setShareSaving(false)
     return success
+  }
+  const saveSharedDocs = async (urls) => {
+    try {
+      const { error } = await supabase.from('deals').update({ shared_docs: urls }).eq('id', id)
+      if (!error) setSharedDocs(urls)
+    } catch (err) {
+      console.error('[DealRoom] shared_docs save failed:', err)
+    }
+  }
+  const toggleSharedDoc = (url) => {
+    // On first toggle, initialise from the current documents list (all enabled)
+    const current = sharedDocs ?? documents.map(d => d.url)
+    const next = current.includes(url) ? current.filter(u => u !== url) : [...current, url]
+    saveSharedDocs(next)
   }
   const addShareEmail = async () => {
     const email = shareEmailInput.trim().toLowerCase()
@@ -1743,6 +1759,31 @@ export default function DealPage() {
                 </div>
               )}
             </div>
+
+            {/* Document visibility */}
+            {documents.length > 0 && (
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ color: '#555', fontSize: '10px', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Documents visible in deal room</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {documents.map((doc) => {
+                    const enabled = sharedDocs === null || sharedDocs.includes(doc.url)
+                    return (
+                      <label key={doc.url} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#141414', border: `1px solid ${enabled ? '#2a2a2a' : '#1a1a1a'}`, borderRadius: '6px', padding: '8px 12px', cursor: 'pointer', opacity: enabled ? 1 : 0.45 }}>
+                        <input
+                          type="checkbox"
+                          checked={enabled}
+                          onChange={() => toggleSharedDoc(doc.url)}
+                          style={{ accentColor: '#7c6af7', cursor: 'pointer', flexShrink: 0 }}
+                        />
+                        <span style={{ color: enabled ? '#ccc' : '#555', fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                          {doc.name}
+                        </span>
+                      </label>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Share link */}
             <div style={{ background: '#141414', border: '1px solid #1f1f1f', borderRadius: '8px', padding: '12px 14px', marginBottom: '16px' }}>

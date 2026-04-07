@@ -117,9 +117,9 @@ export default function DealRoomView() {
   }
 
   const colors = STAGE_COLORS[deal.stage] || STAGE_COLORS['Sourced']
-  const contacts = deal.contacts || []
   const metrics = deal.metrics || {}
-  const documents = deal.documents || []
+  const allDocuments = deal.documents || []
+  const documents = deal.shared_docs ? allDocuments.filter(d => deal.shared_docs.includes(d.url)) : allDocuments
   const coInvestors = deal.co_investors || []
 
   return (
@@ -184,28 +184,6 @@ export default function DealRoomView() {
                     <div key={key}>
                       <div style={{ color: '#444', fontSize: '10px', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
                       <div style={{ color: '#e5e5e5', fontSize: '13px', fontWeight: 500 }}>{metrics[key]}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Contacts */}
-            {contacts.length > 0 && (
-              <div style={card}>
-                <span style={sectionLabel}>Key Contacts</span>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {contacts.map((c, i) => (
-                    <div key={i} style={{ display: 'flex', gap: '12px', padding: '10px 12px', background: '#141414', border: '1px solid #1f1f1f', borderRadius: '8px', alignItems: 'flex-start' }}>
-                      <div style={{ flex: 1 }}>
-                        {c.name && <div style={{ color: '#f0f0f0', fontSize: '13px', fontWeight: 600, marginBottom: '2px' }}>{c.name}</div>}
-                        {c.firm && <div style={{ color: '#666', fontSize: '12px', marginBottom: '2px' }}>{c.firm}</div>}
-                        {c.email && (
-                          <a href={`mailto:${c.email}`} style={{ color: '#9d8fff', fontSize: '12px', textDecoration: 'none' }}>
-                            {c.email}
-                          </a>
-                        )}
-                      </div>
                     </div>
                   ))}
                 </div>
