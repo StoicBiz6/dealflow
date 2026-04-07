@@ -8,7 +8,7 @@ export default async function handler(req, res) {
   const { deal, types } = req.body
   if (!deal) return res.status(400).json({ error: 'No deal provided' })
 
-  const selectedTypes = Array.isArray(types) && types.length ? types : ['PE', 'Strategic', 'Family Office', 'Growth Equity']
+  const selectedTypes = Array.isArray(types) && types.length ? types : ['PE', 'Strategic', 'Family Office', 'Growth Equity', 'Direct Lender']
 
   const fmt = (n) =>
     n >= 1e9 ? `$${(n / 1e9).toFixed(1)}B`
@@ -36,6 +36,7 @@ ${selectedTypes.includes('PE') ? '- Private equity firms with active mandates in
 ${selectedTypes.includes('Strategic') ? '- Strategic acquirers or consolidators in adjacent markets' : ''}
 ${selectedTypes.includes('Family Office') ? '- Family offices known to invest in this vertical' : ''}
 ${selectedTypes.includes('Growth Equity') ? '- Financial sponsors / growth equity funds' : ''}
+${selectedTypes.includes('Direct Lender') ? '- Direct lenders, credit funds, and private credit providers active in this sector and deal size' : ''}
 
 For each buyer, provide:
 - Real firm/company name (well-known, verifiable)

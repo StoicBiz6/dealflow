@@ -20,7 +20,7 @@ const metaVal = { color: '#ccc', fontSize: '12px', fontWeight: 500 }
 function BuyerUniverseRow({ buyer, onUpdate, onAddToContacts, onAddToBuyers, isInBuyers }) {
   const [expanded, setExpanded] = useState(false)
   const hasContact = buyer.email || buyer.phone || buyer.notes
-  const typeColors = { PE: { bg: 'rgba(99,102,241,0.1)', text: '#818cf8', border: 'rgba(99,102,241,0.3)' }, Strategic: { bg: 'rgba(245,158,11,0.1)', text: '#fbbf24', border: 'rgba(245,158,11,0.3)' }, 'Family Office': { bg: 'rgba(16,185,129,0.1)', text: '#34d399', border: 'rgba(16,185,129,0.3)' }, 'Growth Equity': { bg: 'rgba(59,130,246,0.1)', text: '#60a5fa', border: 'rgba(59,130,246,0.3)' } }
+  const typeColors = { PE: { bg: 'rgba(99,102,241,0.1)', text: '#818cf8', border: 'rgba(99,102,241,0.3)' }, Strategic: { bg: 'rgba(245,158,11,0.1)', text: '#fbbf24', border: 'rgba(245,158,11,0.3)' }, 'Family Office': { bg: 'rgba(16,185,129,0.1)', text: '#34d399', border: 'rgba(16,185,129,0.3)' }, 'Growth Equity': { bg: 'rgba(59,130,246,0.1)', text: '#60a5fa', border: 'rgba(59,130,246,0.3)' }, 'Direct Lender': { bg: 'rgba(234,179,8,0.1)', text: '#facc15', border: 'rgba(234,179,8,0.3)' } }
   const tc = typeColors[buyer.type] || { bg: 'rgba(255,255,255,0.05)', text: '#888', border: '#333' }
   const pbUrl = `https://app.pitchbook.com/search?q=${encodeURIComponent(buyer.pitchbook_query || buyer.name)}`
 
@@ -1296,7 +1296,7 @@ export default function DealPage() {
                         <div style={{ fontSize: '10px', color: '#555', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '10px' }}>Active Investors in This Space</div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                           {marketNews.active_investors.map((inv, i) => {
-                            const typeColors = { PE: '#818cf8', VC: '#60a5fa', 'Growth Equity': '#60a5fa', 'Family Office': '#34d399', Strategic: '#fbbf24' }
+                            const typeColors = { PE: '#818cf8', VC: '#60a5fa', 'Growth Equity': '#60a5fa', 'Family Office': '#34d399', Strategic: '#fbbf24', 'Direct Lender': '#facc15' }
                             return (
                               <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', padding: '10px 12px', background: '#141414', border: '1px solid #1f1f1f', borderRadius: '8px' }}>
                                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -1364,6 +1364,7 @@ export default function DealPage() {
                       <option value='Strategic'>Strategic</option>
                       <option value='Family Office'>Family Office</option>
                       <option value='Growth Equity'>Growth Equity</option>
+                      <option value='Direct Lender'>Direct Lender</option>
                     </select>
                     <button
                       onClick={e => { e.stopPropagation(); findBuyers() }}
