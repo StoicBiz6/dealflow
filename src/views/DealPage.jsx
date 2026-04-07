@@ -789,7 +789,7 @@ export default function DealPage() {
   const saveSharedDocs = async (urls) => {
     try {
       const { error } = await supabase.from('deals').update({ shared_docs: urls }).eq('id', id)
-      if (!error) setSharedDocs(urls)
+      if (error) console.error('[DealRoom] shared_docs save failed:', error)
     } catch (err) {
       console.error('[DealRoom] shared_docs save failed:', err)
     }
@@ -798,6 +798,7 @@ export default function DealPage() {
     // On first toggle, initialise from the current documents list (all enabled)
     const current = sharedDocs ?? documents.map(d => d.url)
     const next = current.includes(url) ? current.filter(u => u !== url) : [...current, url]
+    setSharedDocs(next) // update UI immediately (optimistic)
     saveSharedDocs(next)
   }
   const addShareEmail = async () => {
