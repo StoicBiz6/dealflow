@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect } from 'react'
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom'
-import { SignedIn, SignedOut } from '@clerk/clerk-react'
+import { SignedIn, SignedOut, useSignIn } from '@clerk/clerk-react'
 import Navbar from './components/Navbar'
 import LandingPage from './LandingPage'
 import { SignIn, SignUp } from '@clerk/clerk-react'
@@ -27,19 +27,108 @@ import { useDeals } from './hooks/useDeals'
 import { useWorkspace } from './hooks/useWorkspace'
 import DealChat from './components/DealChat'
 
-// Shown to unauthenticated visitors of /deal-room/:id — embeds Clerk sign-in and redirects
-// back to the same deal room URL after successful sign-in.
+// Passwordless OTP gate for /deal-room/:id — shown to unauthenticated visitors.
+// Step 1: enter invited email → Clerk sends a one-time code.
+// Step 2: enter the code → session created, redirect back to this deal room.
 function DealRoomGate() {
   const location = useLocation()
+  const navigate = useNavigate()
+  const { signIn, setActive, isLoaded } = useSignIn()
+  const [email, setEmail] = useState('')
+  const [code, setCode] = useState('')
+  const [step, setStep] = useState('email') // 'email' | 'code'
+  const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  const inputStyle = { background: '#0d0d0d', border: '1px solid #2a2a2a', borderRadius: '8px', padding: '10px 14px', color: '#f0f0f0', fontSize: '13px', fontFamily: 'DM Mono, monospace', outline: 'none', width: '100%', boxSizing: 'border-box' }
+  const btnStyle = (disabled) => ({ background: '#7c6af7', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px', fontSize: '13px', fontWeight: 600, cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.6 : 1, fontFamily: 'DM Mono, monospace', width: '100%' })
+
+  const handleEmailSubmit = async (e) => {
+    e.preventDefault()
+    if (!isLoaded || submitting) return
+    setSubmitting(true)
+    setError('')
+    try {
+      await signIn.create({ identifier: email.trim().toLowerCase(), strategy: 'email_code' })
+      setStep('code')
+    } catch (err) {
+      setError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Failed to send code. Check the email address.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleCodeSubmit = async (e) => {
+    e.preventDefault()
+    if (!isLoaded || submitting) return
+    setSubmitting(true)
+    setError('')
+    try {
+      const result = await signIn.attemptFirstFactor({ strategy: 'email_code', code: code.trim() })
+      if (result.status === 'complete') {
+        await setActive({ session: result.createdSessionId })
+        navigate(location.pathname, { replace: true })
+      }
+    } catch (err) {
+      setError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Invalid code. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '28px', fontFamily: 'DM Mono, monospace', padding: '40px 20px' }}>
       <div style={{ textAlign: 'center' }}>
         <div style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '22px', color: '#f0f0f0', marginBottom: '10px' }}>🔒 Deal Room Access</div>
         <div style={{ color: '#555', fontSize: '13px', lineHeight: 1.6, maxWidth: '360px' }}>
-          Sign in with the email address you were invited with to view this deal room.
+          {step === 'email'
+            ? 'Enter the email address you were invited with to receive a sign-in code.'
+            : `A 6-digit code was sent to ${email}. Enter it below.`}
         </div>
       </div>
-      <SignIn routing="hash" forceRedirectUrl={location.pathname} />
+
+      <div style={{ background: '#111', border: '1px solid #1f1f1f', borderRadius: '12px', padding: '28px 32px', width: '100%', maxWidth: '360px' }}>
+        {step === 'email' ? (
+          <form onSubmit={handleEmailSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="your@email.com"
+              autoFocus
+              required
+              style={inputStyle}
+            />
+            {error && <div style={{ color: '#f87171', fontSize: '12px' }}>{error}</div>}
+            <button type="submit" disabled={submitting || !email} style={btnStyle(submitting || !email)}>
+              {submitting ? 'Sending…' : 'Send code →'}
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleCodeSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <input
+              type="text"
+              value={code}
+              onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              placeholder="000000"
+              autoFocus
+              required
+              style={{ ...inputStyle, letterSpacing: '0.3em', textAlign: 'center', fontSize: '18px' }}
+            />
+            {error && <div style={{ color: '#f87171', fontSize: '12px' }}>{error}</div>}
+            <button type="submit" disabled={submitting || code.length < 6} style={btnStyle(submitting || code.length < 6)}>
+              {submitting ? 'Verifying…' : 'Access deal room →'}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setStep('email'); setCode(''); setError('') }}
+              style={{ background: 'none', border: 'none', color: '#444', fontSize: '11px', cursor: 'pointer', fontFamily: 'DM Mono, monospace', marginTop: '4px' }}
+            >
+              ← Use a different email
+            </button>
+          </form>
+        )}
+      </div>
     </div>
   )
 }
