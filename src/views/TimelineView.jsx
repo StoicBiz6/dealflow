@@ -26,28 +26,22 @@ function toDateObj(str) {
 }
 
 export default function TimelineView({ deals, onOpenDeal }) {
-  const [filterStage, setFilterStage] = useState('all')
-  const [hiddenDeals, setHiddenDeals] = useState(new Set()) // deal IDs hidden by user
-  const [showPicker, setShowPicker] = useState(false)
+  // Multi-select stages — empty set means all shown
+  const [activeStages, setActiveStages] = useState(new Set())
 
-  const toggleDeal = (id) => {
-    setHiddenDeals(prev => {
+  const toggleStage = (stage) => {
+    setActiveStages(prev => {
       const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
+      next.has(stage) ? next.delete(stage) : next.add(stage)
       return next
     })
-  }
-  const toggleAll = (visible) => {
-    setHiddenDeals(visible ? new Set() : new Set(deals.map(d => d.id)))
   }
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  // Filter by stage then by hidden set
-  const filtered = deals.filter(d =>
-    (filterStage === 'all' || d.stage === filterStage) && !hiddenDeals.has(d.id)
-  )
+  // Filter: empty set = all stages shown; otherwise only selected stages
+  const filtered = deals.filter(d => activeStages.size === 0 || activeStages.has(d.stage))
 
   // Sort: deals with close date first (by close date asc), then no-date by created_at
   const sorted = [...filtered].sort((a, b) => {
@@ -103,92 +97,40 @@ export default function TimelineView({ deals, onOpenDeal }) {
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-          {/* Deal picker */}
-          <div style={{ position: 'relative' }}>
+        {/* Multi-select stage toggles */}
+        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', alignItems: 'center' }}>
+          {activeStages.size > 0 && (
             <button
-              onClick={() => setShowPicker(p => !p)}
-              style={{
-                background: hiddenDeals.size ? 'rgba(124,106,247,0.1)' : 'transparent',
-                border: `1px solid ${hiddenDeals.size ? '#4a3fa0' : '#2a2a2a'}`,
-                borderRadius: '5px',
-                color: hiddenDeals.size ? '#9d8fff' : '#555',
-                cursor: 'pointer',
-                fontFamily: 'DM Mono, monospace',
-                fontSize: '11px',
-                padding: '4px 10px',
-                letterSpacing: '0.04em',
-                whiteSpace: 'nowrap',
-              }}
+              onClick={() => setActiveStages(new Set())}
+              style={{ background: 'none', border: 'none', color: '#444', cursor: 'pointer', fontFamily: 'DM Mono, monospace', fontSize: '11px', padding: '4px 6px', letterSpacing: '0.04em' }}
             >
-              {hiddenDeals.size ? `${deals.length - hiddenDeals.size}/${deals.length} deals` : 'Select deals'} ▾
+              Clear
             </button>
-
-            {showPicker && (
-              <div
-                style={{ position: 'absolute', right: 0, top: 'calc(100% + 6px)', background: '#111', border: '1px solid #2a2a2a', borderRadius: '8px', padding: '8px 0', zIndex: 50, minWidth: '220px', maxHeight: '320px', overflowY: 'auto', boxShadow: '0 8px 24px rgba(0,0,0,0.6)' }}
-                onMouseLeave={() => setShowPicker(false)}
+          )}
+          {STAGES.map(s => {
+            const color = STAGE_COLORS[s]
+            const active = activeStages.has(s)
+            return (
+              <button
+                key={s}
+                onClick={() => toggleStage(s)}
+                style={{
+                  background: active ? color.bg : 'transparent',
+                  border: `1px solid ${active ? color.border : '#2a2a2a'}`,
+                  borderRadius: '5px',
+                  color: active ? color.text : '#444',
+                  cursor: 'pointer',
+                  fontFamily: 'DM Mono, monospace',
+                  fontSize: '11px',
+                  padding: '4px 10px',
+                  letterSpacing: '0.04em',
+                  textTransform: 'uppercase',
+                }}
               >
-                {/* All / None shortcuts */}
-                <div style={{ display: 'flex', gap: '8px', padding: '4px 12px 8px', borderBottom: '1px solid #1a1a1a', marginBottom: '4px' }}>
-                  <button onClick={() => toggleAll(true)} style={{ background: 'none', border: 'none', color: '#666', fontSize: '11px', cursor: 'pointer', fontFamily: 'DM Mono, monospace', padding: 0 }}>All</button>
-                  <span style={{ color: '#2a2a2a' }}>·</span>
-                  <button onClick={() => toggleAll(false)} style={{ background: 'none', border: 'none', color: '#666', fontSize: '11px', cursor: 'pointer', fontFamily: 'DM Mono, monospace', padding: 0 }}>None</button>
-                </div>
-                {deals.map(d => {
-                  const sc = STAGE_COLORS[d.stage] || STAGE_COLORS['Sourced']
-                  const visible = !hiddenDeals.has(d.id)
-                  return (
-                    <label
-                      key={d.id}
-                      style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 12px', cursor: 'pointer', opacity: visible ? 1 : 0.4 }}
-                      onMouseEnter={e => e.currentTarget.style.background = '#1a1a1a'}
-                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={visible}
-                        onChange={() => toggleDeal(d.id)}
-                        style={{ accentColor: '#7c6af7', cursor: 'pointer', flexShrink: 0 }}
-                      />
-                      <span style={{ flex: 1, color: '#ccc', fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.company_name}</span>
-                      <span style={{ flexShrink: 0, background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: '3px', fontSize: '9px', padding: '1px 5px', fontFamily: 'DM Mono, monospace', textTransform: 'uppercase' }}>{d.stage}</span>
-                    </label>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Stage filter */}
-          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-            {['all', ...STAGES].map(s => {
-              const color = s === 'all' ? null : STAGE_COLORS[s]
-              const active = filterStage === s
-              return (
-                <button
-                  key={s}
-                  onClick={() => setFilterStage(s)}
-                  style={{
-                    background: active
-                      ? (color ? color.bg : 'rgba(255,255,255,0.08)')
-                      : 'transparent',
-                    border: `1px solid ${active ? (color ? color.border : '#555') : '#2a2a2a'}`,
-                    borderRadius: '5px',
-                    color: active ? (color ? color.text : '#f0f0f0') : '#444',
-                    cursor: 'pointer',
-                    fontFamily: 'DM Mono, monospace',
-                    fontSize: '11px',
-                    padding: '4px 10px',
-                    letterSpacing: '0.04em',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  {s === 'all' ? 'All' : s}
-                </button>
-              )
-            })}
-          </div>
+                {s}
+              </button>
+            )
+          })}
         </div>
       </div>
 
