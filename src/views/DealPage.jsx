@@ -200,6 +200,7 @@ export default function DealPage() {
   const [coInvestors, setCoInvestors] = useState([])
   const [documents, setDocuments] = useState([])
   const [timeline, setTimeline] = useState('')
+  const [closeDate, setCloseDate] = useState('')
   const [newTask, setNewTask] = useState('')
   const [newActivity, setNewActivity] = useState({ type: 'call', note: '' })
   const [newBuyer, setNewBuyer] = useState('')
@@ -268,6 +269,7 @@ export default function DealPage() {
       setCoInvestors(data.co_investors || [])
       setDocuments(data.documents || [])
       setTimeline(data.timeline_to_close || '')
+      setCloseDate(data.expected_close_date || '')
       setBuyerUniverse(data.buyer_universe || [])
       setComments(data.comments || [])
       setSharedWith(data.shared_with || [])
@@ -399,6 +401,9 @@ export default function DealPage() {
   // Timeline
   const handleTimeline = (val) => {
     setTimeline(val); save({ timeline_to_close: val || null })
+  }
+  const handleCloseDate = (val) => {
+    setCloseDate(val); save({ expected_close_date: val || null })
   }
 
   // File upload
@@ -1459,8 +1464,8 @@ export default function DealPage() {
               </div>
             )}
             <div style={{ marginTop: '12px' }}>
-              <div style={{ color: '#555', fontSize: '10px', marginBottom: '5px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Timeline to Close</div>
-              <input type="date" style={inputStyle} value={timeline} onChange={e => handleTimeline(e.target.value)} />
+              <div style={{ color: '#555', fontSize: '10px', marginBottom: '5px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Expected Close Date</div>
+              <input type="date" style={inputStyle} value={closeDate} onChange={e => handleCloseDate(e.target.value)} />
             </div>
           </div>
 

@@ -233,7 +233,7 @@ export default function DealRoomView() {
                 { label: 'Sector', value: deal.sector },
                 { label: 'Stage', value: deal.stage },
                 { label: 'Deal Owner', value: deal.deal_owner },
-                deal.timeline_to_close && { label: 'Timeline', value: formatDate(deal.timeline_to_close) },
+                (deal.expected_close_date || deal.timeline_to_close) && { label: 'Timeline', value: formatDate(deal.expected_close_date || deal.timeline_to_close) },
               ].filter(r => r && r.value && r.value !== '—').map(r => (
                 <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                   <span style={metaKey}>{r.label}</span>
