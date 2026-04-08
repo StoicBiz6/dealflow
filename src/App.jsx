@@ -134,17 +134,24 @@ function DealRoomGate() {
 }
 
 function MainView() {
-  const [view, setView] = useState('dashboard')
+  const navigate = useNavigate()
+  const location = useLocation()
+  // Persist active view in the URL query string so refresh stays on the same view
+  const VALID_VIEWS = ['dashboard', 'pipeline', 'list', 'timeline', 'tasks', 'news']
+  const viewFromUrl = new URLSearchParams(location.search).get('view')
+  const [view, setViewState] = useState(VALID_VIEWS.includes(viewFromUrl) ? viewFromUrl : 'dashboard')
+  const setView = (v) => {
+    setViewState(v)
+    navigate(`/raise?view=${v}`, { replace: true })
+  }
   const [modalDeal, setModalDeal] = useState(null)
   const [showImport, setShowImport] = useState(false)
   const [showWorkspace, setShowWorkspace] = useState(false)
   const { workspaces, activeWorkspace, loading: wsLoading, userId, switchWorkspace, loadMembers, createWorkspace, joinWorkspace, leaveWorkspace } = useWorkspace()
   const workspaceId = activeWorkspace?.id ?? null
   const { deals, loading, error, addDeal, updateDeal, deleteDeal, updateStage, refetch } = useDeals(wsLoading ? undefined : workspaceId)
-  const navigate = useNavigate()
-  const location = useLocation()
   useEffect(() => {
-    if (location.pathname === '/') refetch()
+    if (location.pathname === '/raise') refetch()
   }, [location.pathname])
   const pendingTaskCount = deals.reduce((s, d) => s + (d.tasks || []).filter(t => !t.done).length, 0)
   const handleUpdateDealTasks = (dealId, tasks) => updateDeal(dealId, { tasks })
