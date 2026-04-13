@@ -732,10 +732,10 @@ export default function DealPage() {
   const loadComparableValuation = async () => {
     setCompValLoading(true)
     try {
-      const res = await fetch('/api/comparable-valuation', {
+      const res = await fetch('/api/find-buyers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ deal: { ...deal, memo, metrics } }),
+        body: JSON.stringify({ action: 'valuation', deal: { ...deal, memo, metrics } }),
       })
       const data = await res.json()
       if (data.error) alert('Valuation error: ' + data.error)

@@ -88,10 +88,10 @@ export default function DealRoomView() {
         setDeal(data)
         setAuthorized(true)
         if (isShared) {
-          fetch('/api/notify-deal-view', {
+          fetch('/api/deal-room-access', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ dealId: id, viewerEmail: userEmail }),
+            body: JSON.stringify({ action: 'notify', dealId: id, viewerEmail: userEmail }),
           }).catch(() => {})
         }
       } else {
