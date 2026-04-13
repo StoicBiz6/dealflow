@@ -149,11 +149,16 @@ export default async function handler(req, res) {
       <p style="font-size:11px;color:#333;margin:0">Sent via DealFlow by Stoic Partner</p>
     </div>`
 
-    const gmailRes = await sendGmail(accessToken, normalizedEmail, `Your access code for the ${deal.company_name} deal room`, html)
-    if (!gmailRes.ok) {
-      const err = await gmailRes.json()
-      console.error('[deal-room-access] Gmail send error:', err)
-      return res.status(500).json({ error: err.error?.message || 'Failed to send email. Please try again.' })
+    try {
+      const gmailRes = await sendGmail(accessToken, normalizedEmail, `Your access code for the ${deal.company_name} deal room`, html)
+      if (!gmailRes.ok) {
+        const err = await gmailRes.json().catch(() => ({}))
+        console.error('[deal-room-access] Gmail send error:', JSON.stringify(err))
+        return res.status(500).json({ error: `Gmail: ${err?.error?.message || err?.error?.status || gmailRes.status}` })
+      }
+    } catch (e) {
+      console.error('[deal-room-access] Gmail exception:', e)
+      return res.status(500).json({ error: `Exception: ${e.message}` })
     }
 
     return res.json({ sent: true })
