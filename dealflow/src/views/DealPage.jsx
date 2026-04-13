@@ -704,10 +704,10 @@ export default function DealPage() {
     setCimInput('')
     setCimQALoading(true)
     try {
-      const res = await fetch('/api/cim-qa', {
+      const res = await fetch('/api/parse-cim', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: q, deal: { ...deal, memo, metrics, score } }),
+        body: JSON.stringify({ action: 'qa', question: q, deal: { ...deal, memo, metrics, score } }),
       })
       const data = await res.json()
       if (data.error) {
