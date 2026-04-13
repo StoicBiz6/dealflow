@@ -148,8 +148,9 @@ export default async function handler(req, res) {
       }).eq('user_id', userId)
     }
 
-    const closingDate = deal.timeline_to_close
-      ? new Date(deal.timeline_to_close).toISOString().slice(0, 10)
+    const closingDateRaw = deal.expected_close_date || deal.timeline_to_close
+    const closingDate = closingDateRaw
+      ? new Date(closingDateRaw).toISOString().slice(0, 10)
       : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
 
     const description = [

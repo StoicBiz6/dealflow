@@ -74,15 +74,15 @@ export function useDeals(workspaceId = null) {
   const updateStage = async (id, stage) => {
     const deal = deals.find(d => d.id === id)
     const existing = deal?.tasks || []
-    const existingSet = new Set(existing.map(t => t.content))
+    const existingSet = new Set(existing.map(t => t.text || t.content))
     const checklistItems = STAGE_CHECKLISTS[stage] || []
     const newTasks = checklistItems
       .filter(c => !existingSet.has(c))
       .map(c => ({
         id: crypto.randomUUID(),
-        content: c,
+        text: c,
         done: false,
-        created_at: new Date().toISOString(),
+        due: '',
       }))
     const mergedTasks = [...existing, ...newTasks]
     return updateDeal(id, { stage, tasks: mergedTasks })
