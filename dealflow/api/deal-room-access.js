@@ -91,7 +91,7 @@ export default async function handler(req, res) {
 
     if (sendError) {
       console.error('[deal-room-access] Resend error:', sendError)
-      return res.status(500).json({ error: 'Failed to send email. Please try again.' })
+      return res.status(500).json({ error: sendError.message || JSON.stringify(sendError) })
     }
 
     return res.json({ sent: true })
