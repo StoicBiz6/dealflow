@@ -69,6 +69,7 @@ export default function App() {
         <Routes>
           <Route path="/sign-in/*" element={<SignIn routing="path" path="/sign-in" />} />
           <Route path="/sign-up/*" element={<SignUp routing="path" path="/sign-up" />} />
+          <Route path="/deal-room/:id" element={<DealRoomView />} />
           <Route path="*" element={<LandingPage />} />
         </Routes>
       </SignedOut>
