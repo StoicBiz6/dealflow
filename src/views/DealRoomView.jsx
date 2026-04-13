@@ -70,6 +70,14 @@ export default function DealRoomView() {
       if (isOwner || isShared || isWorkspaceMember) {
         setDeal(data)
         setAuthorized(true)
+        // Notify the deal owner when a shared recipient views (not the owner themselves)
+        if (isShared) {
+          fetch('/api/notify-deal-view', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dealId: id, viewerEmail: userEmail }),
+          }).catch(() => {}) // fire-and-forget, never block the UI
+        }
       } else {
         setAuthorized(false)
       }
