@@ -75,13 +75,6 @@ async function sendGmail(accessToken, to, subject, html) {
 
 async function notifyDealView(dealId, viewerEmail) {
   try {
-    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-    const { data: recent } = await supabase
-      .from('deal_room_views').select('id')
-      .eq('deal_id', dealId).eq('viewer_email', viewerEmail)
-      .gte('viewed_at', since).limit(1)
-    if (recent && recent.length > 0) return
-
     await supabase.from('deal_room_views').insert({ deal_id: dealId, viewer_email: viewerEmail })
 
     const { data: deal } = await supabase.from('deals').select('company_name, user_id').eq('id', dealId).single()
