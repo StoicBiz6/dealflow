@@ -245,6 +245,7 @@ export default function DealPage() {
   const [sharedWith, setSharedWith] = useState([])
   const [sharedDocs, setSharedDocs] = useState(null) // null = all docs; array of URLs = explicit list
   const [shareSaving, setShareSaving] = useState(false)
+  const [roomViewers, setRoomViewers] = useState([])
   const [shareInviteStatus, setShareInviteStatus] = useState(null) // null | 'sending' | 'sent' | { error: string }
   // Google Calendar
   const [calSyncing, setCalSyncing] = useState(false)
@@ -766,6 +767,18 @@ export default function DealPage() {
     setComments(next)
     save({ comments: next })
   }
+
+  // Fetch viewer log when share modal opens
+  useEffect(() => {
+    if (!showShareModal || !id) return
+    supabase
+      .from('deal_room_views')
+      .select('viewer_email, viewed_at')
+      .eq('deal_id', id)
+      .order('viewed_at', { ascending: false })
+      .limit(50)
+      .then(({ data }) => setRoomViewers(data || []))
+  }, [showShareModal, id])
 
   // Deal Room Share — direct Supabase call (bypasses generic save to avoid state interactions)
   // Returns true on success so callers can fire follow-up actions (e.g. invite email)
@@ -1715,7 +1728,7 @@ export default function DealPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div>
                 <div style={{ fontFamily: 'Syne, sans-serif', fontSize: '16px', fontWeight: 700, color: '#f0f0f0', marginBottom: '4px' }}>Share Deal Room</div>
-                <div style={{ color: '#555', fontSize: '12px' }}>Clients must sign in to view the read-only deal summary</div>
+                <div style={{ color: '#555', fontSize: '12px' }}>Invited clients enter their email to receive a one-time access code</div>
               </div>
               <button onClick={() => setShowShareModal(false)} style={{ background: 'none', border: 'none', color: '#444', cursor: 'pointer', fontSize: '20px', lineHeight: 1, padding: '0 4px' }}>✕</button>
             </div>
@@ -1831,8 +1844,23 @@ export default function DealPage() {
               </div>
             )}
 
-            <div style={{ color: '#333', fontSize: '11px', lineHeight: 1.6 }}>
-              Recipients must sign in with the email address you listed above. They'll see a read-only view of the company overview, stage, financials, and investment memo.
+            {/* Viewer log */}
+            <div style={{ marginTop: '16px', borderTop: '1px solid #1a1a1a', paddingTop: '16px' }}>
+              <div style={{ color: '#444', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
+                View History {roomViewers.length > 0 && <span style={{ color: '#555' }}>· {roomViewers.length}</span>}
+              </div>
+              {roomViewers.length === 0 ? (
+                <div style={{ color: '#2a2a2a', fontSize: '12px' }}>No views yet</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '160px', overflowY: 'auto' }}>
+                  {roomViewers.map((v, i) => (
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0d0d0d', border: '1px solid #1a1a1a', borderRadius: '6px', padding: '7px 10px' }}>
+                      <span style={{ color: '#9d8fff', fontSize: '11px' }}>{v.viewer_email}</span>
+                      <span style={{ color: '#333', fontSize: '10px' }}>{new Date(v.viewed_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
