@@ -80,15 +80,6 @@ async function notifyDealView(dealId, viewerEmail) {
     const { data: deal } = await supabase.from('deals').select('company_name, user_id').eq('id', dealId).single()
     if (!deal) return
 
-    // Ping Hulk (Agent Platform) — fire-and-forget
-    if (process.env.HULK_INBOUND_URL) {
-      fetch(process.env.HULK_INBOUND_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ event: 'deal_room_viewed', dealId, dealName: deal.company_name, viewerEmail }),
-      }).catch(() => {})
-    }
-
     const accessToken = await getAccessToken(deal.user_id)
     if (!accessToken) return
 
